@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Narrative Persistence — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .persist-header { margin-bottom: 1rem; }
+    .persist-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .section-title { font-size: 0.8rem; color: var(--accent); letter-spacing: 1px; margin: 1.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+    .decay-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center;
+    }
+    .decay-card h3 { font-size: 0.85rem; margin-bottom: 0.2rem; }
+    .decay-card h3 a { color: var(--text); }
+    .decay-card h3 a:hover { color: var(--accent); }
+    .half-life-badge {
+        display: inline-block; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem;
+        font-weight: bold; min-width: 60px; text-align: center;
+    }
+    .hl-short { background: rgba(255,51,51,0.15); color: #ff3333; border: 1px solid #4d1a1a; }
+    .hl-medium { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid #3a2a00; }
+    .hl-long { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #1a3a2a; }
+    .liquidity-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; border-left: 3px solid var(--accent-dim);
+    }
+    .liquidity-card h3 { font-size: 0.85rem; margin-bottom: 0.2rem; }
+    .liquidity-card h3 a { color: var(--text); }
+    .liquidity-card h3 a:hover { color: var(--accent); }
+    .liq-score { font-size: 0.9rem; font-weight: bold; }
+    .liq-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; height: 6px; margin-top: 0.3rem; }
+    .liq-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+    .narrative-compare { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.3rem; }
+    .cheap { color: #00e676; }
+    .expensive { color: #ff8c00; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .decay-grid { display: grid; grid-template-columns: 1fr 100px; gap: 0.5rem; align-items: center; }
+    .factor-row { display: flex; gap: 0.5rem; font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; }
+    .factor { display: inline-block; padding: 0.1rem 0.3rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-size: 0.55rem; }
+</style>
+
+<div class="persist-header">
+    <h1>NARRATIVE PERSISTENCE</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total_expiring }}</strong> tracked half-lives</div>
+    <div class="stat-item"><strong>{{ total_liquid }}</strong> liquidity scores</div>
+</div>
+
+{% if expiring %}
+<div class="section-title">HALF-LIFE TRACKER — Shortest to Longest</div>
+{% for art in expiring %}
+{% set hl = art.half_life or '?' %}
+{% set is_short = hl|replace('h','')|replace('d','')|replace('w','')|int < 24 if hl != '?' else true %}
+<div class="decay-card">
+    <div>
+        <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+        <div style="font-size:0.65rem; color:var(--text-dim);">{{ art.created[:16] if art.created }}</div>
+        {% if art.meme_portability and art.meme_portability > 0 %}
+        <div class="factor-row">
+            <span class="factor">meme: {{ "%.0f"|format(art.meme_portability * 10) }}/10</span>
+            {% if art.elite_utilility is defined and art.elite_utility %}
+            <span class="factor">elite: {{ "%.0f"|format(art.elite_utility * 10) }}/10</span>
+            {% endif %}
+            {% if art.symbolic_density is defined and art.symbolic_density %}
+            <span class="factor">symbolic: {{ "%.0f"|format(art.symbolic_density * 10) }}/10</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <span class="half-life-badge {% if is_short %}hl-short{% elif 'w' in hl %}hl-long{% else %}hl-medium{% endif %}">{{ hl }}</span>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if liquid %}
+<div class="section-title">LIQUIDITY RANKING — Cheapest to Spread</div>
+{% for art in liquid %}
+<div class="liquidity-card">
+    <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="liq-score" style="color: {% if art.liquidity_score >= 0.7 %}#00e676{% elif art.liquidity_score >= 0.4 %}#ffd500{% else %}#ff8c00{% endif %};">
+            {{ "%.0f"|format((art.liquidity_score or 0) * 100) }}%
+        </span>
+        <div class="liq-bar" style="flex:1;">
+            <div class="liq-fill" style="width: {{ (art.liquidity_score or 0) * 100 }}%;"></div>
+        </div>
+    </div>
+    {% if art.cheap_narrative or art.expensive_narrative %}
+    <div class="narrative-compare">
+        {% if art.cheap_narrative %}<span class="cheap">Cheap:</span> {{ art.cheap_narrative[:150] }}{% endif %}
+        {% if art.expensive_narrative %}<br><span class="expensive">Expensive:</span> {{ art.expensive_narrative[:150] }}{% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if not expiring and not liquid %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No persistence data yet. Half-life and liquidity scores are populated by the enhanced reporter analysis.</p>
+</div>
+{% endif %}
+{% endblock %}

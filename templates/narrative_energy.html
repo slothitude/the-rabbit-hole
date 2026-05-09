@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Narrative Energy — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .energy-header { margin-bottom: 1rem; }
+    .energy-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .energy-bar-container { margin-bottom: 0.6rem; }
+    .energy-bar-label { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.2rem; display: flex; justify-content: space-between; }
+    .energy-bar-track { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; height: 8px; position: relative; }
+    .energy-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .energy-critical .energy-bar-fill { background: linear-gradient(90deg, #ff3333, #ff6644); }
+    .energy-high .energy-bar-fill { background: linear-gradient(90deg, #ff8c00, #ffaa33); }
+    .energy-moderate .energy-bar-fill { background: linear-gradient(90deg, #ffd500, #ffee44); }
+    .energy-low .energy-bar-fill { background: linear-gradient(90deg, #00e676, #44ff88); }
+    .energy-article-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; border-left: 3px solid var(--accent-dim);
+    }
+    .energy-article-card h3 { font-size: 0.85rem; margin-bottom: 0.2rem; }
+    .energy-article-card h3 a { color: var(--text); }
+    .energy-article-card h3 a:hover { color: var(--accent); }
+    .energy-meta { font-size: 0.65rem; color: var(--text-dim); }
+    .band-section { margin-bottom: 2rem; }
+    .band-title { font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+    .badge-energy { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.6rem; font-weight: bold; margin-right: 0.2rem; }
+    .badge-critical { background: rgba(255,51,51,0.15); color: #ff3333; border: 1px solid #4d1a1a; }
+    .badge-high-e { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid #3a2a00; }
+    .badge-moderate { background: rgba(255,213,0,0.15); color: #ffd500; border: 1px solid #3a3600; }
+    .badge-low-e { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #1a3a2a; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .drivers { margin-top: 0.3rem; }
+    .driver-tag { display: inline-block; padding: 0.1rem 0.3rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-size: 0.55rem; color: var(--text-dim); margin-right: 0.15rem; }
+</style>
+
+<div class="energy-header">
+    <h1>NARRATIVE ENERGY FIELD</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> tracked narratives</div>
+    <div class="stat-item"><strong>{{ energy_bands.critical|length }}</strong> critical energy</div>
+    <div class="stat-item"><strong>{{ energy_bands.high|length }}</strong> high energy</div>
+</div>
+
+{% for band_name, band_label in [("critical", "CRITICAL — Maximum Spread Velocity"), ("high", "HIGH — Accelerating Narratives")] %}
+{% if energy_bands[band_name] %}
+<div class="band-section">
+    <div class="band-title" style="color: {% if band_name == 'critical' %}#ff3333{% else %}#ff8c00{% endif %};">
+        {{ band_label }} ({{ energy_bands[band_name]|length }})
+    </div>
+    {% for art in energy_bands[band_name] %}
+    <div class="energy-article-card energy-{{ band_name }}">
+        <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+        <div class="energy-meta">
+            <span class="badge-energy badge-{{ band_name }}">{{ "%.0f"|format((art.narrative_energy or 0) * 100) }}% energy</span>
+            {% if art.game_type %}<span class="badge-energy badge-{{ band_name }}">{{ art.game_type }}</span>{% endif %}
+            {% if art.created %}{{ art.created[:16] }}{% endif %}
+        </div>
+        {% if art.elite_framing %}
+        <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;">
+            <strong>Framing:</strong> {{ art.elite_framing[:200] }}
+        </div>
+        {% endif %}
+        {% if art.regime_response %}
+        <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem;">
+            <strong>Regime Response:</strong> {{ art.regime_response[:200] }}
+        </div>
+        {% endif %}
+        <div class="energy-bar-container" style="margin-top:0.4rem;">
+            <div class="energy-bar-track">
+                <div class="energy-bar-fill" style="width: {{ (art.narrative_energy or 0) * 100 }}%;"></div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endfor %}
+
+{% for band_name, band_label in [("moderate", "MODERATE — Sustained Interest"), ("low", "LOW — Fading / Niche")] %}
+{% if energy_bands[band_name] %}
+<div class="band-section">
+    <div class="band-title" style="color: {% if band_name == 'moderate' %}#ffd500{% else %}#00e676{% endif %};">
+        {{ band_label }} ({{ energy_bands[band_name]|length }})
+    </div>
+    {% for art in energy_bands[band_name] %}
+    <div class="energy-article-card energy-{{ band_name }}">
+        <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+        <div class="energy-meta">
+            <span class="badge-energy badge-{{ band_name }}">{{ "%.0f"|format((art.narrative_energy or 0) * 100) }}% energy</span>
+            {% if art.created %}{{ art.created[:16] }}{% endif %}
+        </div>
+        <div class="energy-bar-container" style="margin-top:0.3rem;">
+            <div class="energy-bar-track">
+                <div class="energy-bar-fill" style="width: {{ (art.narrative_energy or 0) * 100 }}%;"></div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endfor %}
+
+{% if not high_energy %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No narrative energy data yet. Energy scores are populated when articles are analyzed with the enhanced meta-analysis.</p>
+</div>
+{% endif %}
+{% endblock %}

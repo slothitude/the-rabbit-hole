@@ -1,0 +1,66 @@
+{# ── TOMORROW tab: 24h predictions with regional sub-tabs ── #}
+{% if tomorrow_preds %}
+    <div class="tab-bar">
+        <button class="tab-btn active" data-section="tmr-front" data-top="tomorrow">Front<span class="tab-count">({{ tomorrow_total }})</span></button>
+        <button class="tab-btn" data-section="tmr-local" data-top="tomorrow">Local<span class="tab-count">({{ tomorrow_section_counts.local }})</span></button>
+        <button class="tab-btn" data-section="tmr-regional" data-top="tomorrow">Regional<span class="tab-count">({{ tomorrow_section_counts.regional }})</span></button>
+        <button class="tab-btn" data-section="tmr-australia" data-top="tomorrow">Australia<span class="tab-count">({{ tomorrow_section_counts.australia }})</span></button>
+        <button class="tab-btn" data-section="tmr-world" data-top="tomorrow">World<span class="tab-count">({{ tomorrow_section_counts.international }})</span></button>
+    </div>
+
+    <div class="paper-section active" id="section-tmr-front">
+        {% call newspaper_layout(tomorrow_preds, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_track_record(accuracy_stats, 0.3) }}
+            {{ sidebar_contradictions(contradictions, 0.6) }}
+            {{ sidebar_expiring(expiring, 0.9) }}
+            {{ sidebar_game_theater(game_dist, 1.2) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-tmr-local">
+        {% call newspaper_layout(tomorrow_sections.local, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_track_record(accuracy_stats, 0.3) }}
+            {{ sidebar_contradictions(contradictions, 0.6) }}
+            {{ sidebar_game_theater(game_dist, 0.9) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-tmr-regional">
+        {% call newspaper_layout(tomorrow_sections.regional, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_track_record(accuracy_stats, 0.3) }}
+            {{ sidebar_contradictions(contradictions, 0.6) }}
+            {{ sidebar_game_theater(game_dist, 0.9) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-tmr-australia">
+        {% call newspaper_layout(tomorrow_sections.australia, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_track_record(accuracy_stats, 0.3) }}
+            {{ sidebar_contradictions(contradictions, 0.6) }}
+            {{ sidebar_game_theater(game_dist, 0.9) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-tmr-world">
+        {% call newspaper_layout(tomorrow_sections.international, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_track_record(accuracy_stats, 0.3) }}
+            {{ sidebar_contradictions(contradictions, 0.6) }}
+            {{ sidebar_game_theater(game_dist, 0.9) }}
+        </div>
+        {% endcall %}
+    </div>
+{% else %}
+    <div class="empty-paper">
+        <p>No 24-hour predictions for the current cycle yet.</p>
+        <p style="margin-top: 0.5rem;">Predictions generate at each edition boundary.</p>
+    </div>
+{% endif %}

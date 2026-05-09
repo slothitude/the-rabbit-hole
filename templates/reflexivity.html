@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Reflexivity — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .reflex-header { margin-bottom: 1rem; }
+    .reflex-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .reflex-intro { font-size: 0.75rem; color: var(--text-dim); max-width: 700px; margin-bottom: 1.5rem; line-height: 1.6; }
+    .reflex-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; border-left: 3px solid var(--accent-dim);
+    }
+    .reflex-card h3 { font-size: 0.85rem; margin-bottom: 0.2rem; }
+    .reflex-card h3 a { color: var(--text); }
+    .reflex-card h3 a:hover { color: var(--accent); }
+    .risk-badge {
+        display: inline-block; padding: 0.15rem 0.5rem; border-radius: 3px;
+        font-size: 0.6rem; font-weight: bold; margin-right: 0.2rem;
+    }
+    .risk-high { background: rgba(255,51,51,0.15); color: #ff3333; border: 1px solid #4d1a1a; }
+    .risk-medium { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid #3a2a00; }
+    .risk-low { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #1a3a2a; }
+    .risk-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; height: 6px; margin-top: 0.3rem; }
+    .risk-fill { height: 100%; border-radius: 2px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .ethics-note {
+        background: rgba(255,51,51,0.05); border: 1px solid rgba(255,51,51,0.15);
+        border-radius: 6px; padding: 1rem; margin-top: 1.5rem;
+        font-size: 0.75rem; color: var(--text-dim); line-height: 1.6;
+    }
+    .ethics-note strong { color: #ff3333; }
+</style>
+
+<div class="reflex-header">
+    <h1>REFLEXIVITY LAYER</h1>
+</div>
+
+<div class="reflex-intro">
+    Every analysis is a potential actor. Once published, forecasts inject energy into the narratives they describe.
+    This layer tracks the platform's own influence on the discourse it analyzes.
+    <strong>Reflexivity risk</strong> measures how likely an analysis is to influence the narrative itself.
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total_articles }}</strong> total articles</div>
+    <div class="stat-item"><strong>{{ total_with_risk }}</strong> with reflexivity risk</div>
+</div>
+
+{% if high_reflexivity %}
+{% for art in high_reflexivity %}
+{% set risk = art.reflexivity_risk or 0 %}
+<div class="reflex-card">
+    <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+    <div style="font-size:0.65rem; color:var(--text-dim);">
+        {% if art.created %}{{ art.created[:16] }}{% endif %}
+        {% if art.game_type %} &middot; {{ art.game_type }}{% endif %}
+        <span class="risk-badge {% if risk >= 0.7 %}risk-high{% elif risk >= 0.4 %}risk-medium{% else %}risk-low{% endif %}">
+            {{ "%.0f"|format(risk * 100) }}% reflexivity
+        </span>
+    </div>
+    {% if art.regime_response %}
+    <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;">
+        <strong>Regime Response:</strong> {{ art.regime_response[:200] }}
+    </div>
+    {% endif %}
+    <div class="risk-bar">
+        <div class="risk-fill" style="width: {{ risk * 100 }}%; background: {% if risk >= 0.7 %}#ff3333{% elif risk >= 0.4 %}#ff8c00{% else %}#00e676{% endif %};"></div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No reflexivity data yet. Scores are populated during enhanced meta-analysis.</p>
+</div>
+{% endif %}
+
+<div class="ethics-note">
+    <strong>Ethics Layer:</strong> When this platform's analysis could amplify a harmful narrative,
+    it is flagged here. The goal is awareness, not amplification. Analyses with high reflexivity
+    risk should consider whether publication serves understanding or just adds energy to the system.
+</div>
+{% endblock %}

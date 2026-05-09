@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Timeline — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .timeline-header h1 {
+        font-size: 1rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+    .filter-bar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .filter-bar select {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 0.3rem 0.5rem;
+        font-family: inherit;
+        font-size: 0.7rem;
+        border-radius: 3px;
+    }
+    .filter-bar select:focus { outline: none; border-color: var(--accent); }
+    .timeline-container {
+        position: relative;
+        padding-left: 2rem;
+    }
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+    }
+    .timeline-bucket {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    .timeline-bucket::before {
+        content: '';
+        position: absolute;
+        left: -1.65rem;
+        top: 0.4rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--bg);
+    }
+    .bucket-date {
+        font-size: 0.75rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+        margin-bottom: 0.8rem;
+        font-weight: bold;
+    }
+    .bucket-count {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        margin-left: 0.5rem;
+    }
+    .timeline-article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.6rem 0.8rem;
+        margin-bottom: 0.4rem;
+        transition: border-color 0.2s;
+        cursor: pointer;
+    }
+    .timeline-article:hover { border-color: var(--accent-dim); }
+    .timeline-article h4 {
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+    }
+    .timeline-article h4 a { color: var(--text); }
+    .timeline-article h4 a:hover { color: var(--accent); }
+    .ta-meta {
+        font-size: 0.6rem;
+        color: var(--text-dim);
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        font-size: 0.55rem;
+        font-weight: bold;
+        margin-right: 0.15rem;
+    }
+    .badge-game { background: rgba(255,170,0,0.15); color: #ffaa00; }
+    .badge-arc { background: rgba(0,230,118,0.1); color: #00e676; }
+    .badge-controlled { background: rgba(248,81,73,0.15); color: #f85149; }
+    .stats-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .stat-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+    }
+    .stat-item strong { color: var(--accent); }
+</style>
+
+<div class="timeline-header">
+    <h1>TIMELINE</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> articles</div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{{ prefix }}/timeline" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <select name="arc" onchange="this.form.submit()">
+            <option value="">All Arcs</option>
+            {% for a in arcs %}
+            <option value="{{ a }}" {% if narrative_arc == a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+        <select name="game_type" onchange="this.form.submit()">
+            <option value="">All Games</option>
+            {% for g in game_types %}
+            <option value="{{ g }}" {% if game_type == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+        </select>
+        <select name="actor" onchange="this.form.submit()">
+            <option value="">All Actors</option>
+            {% for a in actors %}
+            <option value="{{ a.name }}" {% if actor == a.name %}selected{% endif %}>{{ a.name }} ({{ a.count }})</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if buckets %}
+<div class="timeline-container">
+    {% for date, articles in buckets %}
+    <div class="timeline-bucket">
+        <div class="bucket-date">{{ date }}<span class="bucket-count">{{ articles|length }} articles</span></div>
+        {% for art in articles %}
+        <div class="timeline-article">
+            <h4><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h4>
+            <div class="ta-meta">
+                {{ art.source }}
+                {% if art.created %} &middot; {{ art.created[11:16] }}{% endif %}
+                {% if art.game_type and art.game_type != 'none apparent' %}
+                <span class="badge badge-game">{{ art.game_type }}</span>
+                {% endif %}
+                {% if art.narrative_arc %}
+                <span class="badge badge-arc">{{ art.narrative_arc }}</span>
+                {% endif %}
+                {% if art.controlled_narrative %}
+                <span class="badge badge-controlled">CTRL</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No articles on the timeline yet. Run the reporter to generate article nodes.</p>
+</div>
+{% endif %}
+{% endblock %}

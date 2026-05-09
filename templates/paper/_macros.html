@@ -1,0 +1,307 @@
+{# ── Shared macros for paper template ── #}
+
+{# ── Newspaper layout: handles both real articles and predictions ── #}
+{% macro newspaper_layout(arts, delay_base=3.0) %}
+    {% if arts %}
+        {% set lead = arts[0] %}
+        <div class="lead-story {{ 'is-prediction' if lead.get('is_prediction') }}" style="animation-delay: {{ delay_base }}s;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap;">
+                {% if lead.get('is_prediction') %}
+                    <span class="badge-prediction">Prediction</span>
+                    {% if lead.scored %}
+                        {% if lead.accuracy_score >= 0.7 %}
+                            <span class="accuracy-badge accuracy-high">&#10003; {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% elif lead.accuracy_score >= 0.4 %}
+                            <span class="accuracy-badge accuracy-mid">~ {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% else %}
+                            <span class="accuracy-badge accuracy-low">&#10007; {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% endif %}
+                    {% endif %}
+                {% elif lead.importance and lead.importance|float > 0.8 %}
+                    <span class="badge-breaking">Breaking</span>
+                {% endif %}
+            </div>
+            <div class="lead-headline">
+                {% if lead.get('is_prediction') %}
+                    {{ lead.title }}
+                {% else %}
+                    <a href="{{ prefix }}/entry/{{ lead.slug }}">{{ lead.title }}</a>
+                {% endif %}
+            </div>
+            {% if lead.get('is_prediction') and lead.source_title %}
+                <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ lead.source_slug }}">{{ lead.source_title }}</a></div>
+            {% endif %}
+            {% if lead.hitchhiker_summary %}
+                <div class="lead-deck">{{ lead.hitchhiker_summary }}</div>
+            {% endif %}
+            <div class="lead-meta">
+                {% if lead.actors %}
+                    <span class="lead-byline">{{ lead.actors | join(', ') }}</span>
+                {% endif %}
+                {% if lead.get('is_prediction') %}
+                    &middot; {{ lead.get('confidence', 'medium') | capitalize }} confidence
+                    {% if lead.game_type %} &middot; <span class="tag">{{ lead.game_type }}</span>{% endif %}
+                {% else %}
+                    &middot; {{ lead.source or 'Unknown' }}
+                    {% if lead.created %} &middot; {{ lead.created[:16] }}{% endif %}
+                    {% if lead.game_type %} &middot; <span class="tag">{{ lead.game_type }}</span>{% endif %}
+                {% endif %}
+            </div>
+            {% if lead.get('is_prediction') and lead.predicted_claims %}
+                <div class="lead-forecast">
+                    <strong>Predicted Claims:</strong>
+                    <ul style="margin: 0.3rem 0 0 1rem; padding: 0;">
+                        {% for claim in lead.predicted_claims[:5] %}
+                            <li>{{ claim }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% elif lead.forecast and not lead.get('is_prediction') %}
+                <div class="lead-forecast">
+                    <strong>24h Forecast:</strong> {{ lead.forecast[:300] }}
+                </div>
+            {% endif %}
+            {% if not lead.get('is_prediction') %}
+            <div class="lead-meters">
+                <div class="meter meter-energy">
+                    Energy
+                    <div class="meter-bar"><div class="meter-fill" style="width: {{ (lead.narrative_energy * 100)|int }}%"></div></div>
+                    {{ "%.0f%%"|format(lead.narrative_energy * 100) }}
+                </div>
+                <div class="meter meter-pressure">
+                    Pressure
+                    <div class="meter-bar">
+                        {% set pnet = lead.pressure_score - lead.stabilization_score %}
+                        {% set pwidth = [0, [(pnet + 1) / 2 * 100, 100]|min]|max %}
+                        <div class="meter-fill" style="width: {{ pwidth|int }}%"></div>
+                    </div>
+                    {{ "%.2f"|format(pnet) }}
+                </div>
+                <div class="meter meter-liquidity">
+                    Liquidity
+                    <div class="meter-bar"><div class="meter-fill" style="width: {{ (lead.liquidity_score * 100)|int }}%"></div></div>
+                    {{ "%.0f%%"|format(lead.liquidity_score * 100) }}
+                </div>
+                {% if lead.phase_shift_risk %}
+                    <span class="tag" style="border-color: {% if lead.phase_shift_risk == 'high' %}#ff3333{% elif lead.phase_shift_risk == 'medium' %}#d29922{% else %}#58a6ff{% endif %}; color: {% if lead.phase_shift_risk == 'high' %}#ff3333{% elif lead.phase_shift_risk == 'medium' %}#d29922{% else %}#58a6ff{% endif %};">
+                        Phase: {{ lead.phase_shift_risk }}
+                    </span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="fold-rule"><span>Below the Fold</span></div>
+
+        <div class="below-fold">
+            <div class="story-col">
+                {% set ns = namespace(count=0) %}
+                {% for art in arts[1:] %}
+                    {% if loop.index0 < (arts|length - 1) // 2 + 1 %}
+                    {% set ns.count = ns.count + 1 %}
+                    <div class="story-card {{ 'is-prediction' if art.get('is_prediction') }}" style="animation-delay: {{ delay_base + ns.count * 0.12 }}s;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+                            <span class="importance-rank">{{ loop.index + 1 }}</span>
+                            {% if art.get('is_prediction') %}
+                                <span class="badge-prediction">Prediction</span>
+                                {% if art.scored %}
+                                    {% if art.accuracy_score >= 0.7 %}
+                                        <span class="accuracy-badge accuracy-high">&#10003; {{ "%.0f%%"|format(art.accuracy_score * 100) }}</span>
+                                    {% elif art.accuracy_score >= 0.4 %}
+                                        <span class="accuracy-badge accuracy-mid">~ {{ "%.0f%%"|format(art.accuracy_score * 100) }}</span>
+                                    {% else %}
+                                        <span class="accuracy-badge accuracy-low">&#10007; {{ "%.0f%%"|format(art.accuracy_score * 100) }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% elif art.importance and art.importance|float > 0.8 %}
+                                <span class="badge-breaking">Breaking</span>
+                            {% endif %}
+                        </div>
+                        <h3>
+                            {% if art.get('is_prediction') %}{{ art.title }}
+                            {% else %}<a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>{% endif %}
+                        </h3>
+                        {% if art.get('is_prediction') and art.source_title %}
+                            <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ art.source_slug }}">{{ art.source_title[:60] }}</a></div>
+                        {% endif %}
+                        {% if art.hitchhiker_summary %}
+                            <div class="story-deck">{{ art.hitchhiker_summary[:200] }}</div>
+                        {% endif %}
+                        <div class="story-meta">
+                            {% if art.actors %}{{ art.actors[:3] | join(', ') }} &middot; {% endif %}
+                            {% if art.get('is_prediction') %}{{ art.get('confidence', 'medium') | capitalize }} confidence
+                            {% else %}{{ art.source or '' }}{% endif %}
+                            {% if art.game_type %} &middot; <span class="tag">{{ art.game_type }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="story-col">
+                {% set ns2 = namespace(count=0) %}
+                {% for art in arts[1:] %}
+                    {% if loop.index0 >= (arts|length - 1) // 2 + 1 %}
+                    {% set ns2.count = ns2.count + 1 %}
+                    <div class="story-card {{ 'is-prediction' if art.get('is_prediction') }}" style="animation-delay: {{ delay_base + ns2.count * 0.12 }}s;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+                            <span class="importance-rank">{{ loop.index + 1 }}</span>
+                            {% if art.get('is_prediction') %}
+                                <span class="badge-prediction">Prediction</span>
+                                {% if art.scored %}
+                                    {% if art.accuracy_score >= 0.7 %}
+                                        <span class="accuracy-badge accuracy-high">&#10003; {{ "%.0f%%"|format(art.accuracy_score * 100) }}</span>
+                                    {% elif art.accuracy_score >= 0.4 %}
+                                        <span class="accuracy-badge accuracy-mid">~ {{ "%.0f%%"|format(art.accuracy_score * 100) }}</span>
+                                    {% else %}
+                                        <span class="accuracy-badge accuracy-low">&#10007; {{ "%.0f%%"|format(art.accuracy_score * 100) }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% elif art.importance and art.importance|float > 0.8 %}
+                                <span class="badge-breaking">Breaking</span>
+                            {% endif %}
+                        </div>
+                        <h3>
+                            {% if art.get('is_prediction') %}{{ art.title }}
+                            {% else %}<a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>{% endif %}
+                        </h3>
+                        {% if art.get('is_prediction') and art.source_title %}
+                            <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ art.source_slug }}">{{ art.source_title[:60] }}</a></div>
+                        {% endif %}
+                        {% if art.hitchhiker_summary %}
+                            <div class="story-deck">{{ art.hitchhiker_summary[:200] }}</div>
+                        {% endif %}
+                        <div class="story-meta">
+                            {% if art.actors %}{{ art.actors[:3] | join(', ') }} &middot; {% endif %}
+                            {% if art.get('is_prediction') %}{{ art.get('confidence', 'medium') | capitalize }} confidence
+                            {% else %}{{ art.source or '' }}{% endif %}
+                            {% if art.game_type %} &middot; <span class="tag">{{ art.game_type }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {# Caller must provide sidebar content via caller() #}
+            {% if caller is defined %}{{ caller() }}{% endif %}
+        </div>
+    {% else %}
+        <div class="empty-paper">
+            <p>The presses are quiet for this section.</p>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ── Track Record sidebar ── #}
+{% macro sidebar_track_record(stats, delay_base=3.1) %}
+    {% if stats and stats.scored > 0 %}
+    <div class="paper-sidebar" style="animation-delay: {{ delay_base }}s;">
+        <h4>Track Record</h4>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.6rem; font-size: 0.72rem; color: var(--text-dim);">
+            <span>{{ stats.scored }} / {{ stats.total }} scored</span>
+            <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; color: var(--accent); font-weight: bold;">{{ "%.0f%%"|format(stats.avg_score * 100) }} avg</span>
+        </div>
+        {% for r in stats.recent[:5] %}
+        <div class="game-theater-row" style="animation-delay: {{ delay_base + 0.2 + loop.index0 * 0.12 }}s;">
+            <div style="color: var(--text); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ r.title[:55] }}</div>
+            {% if r.accuracy_score >= 0.7 %}
+                <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem; font-weight: bold; color: #3fb950;">&#10003; {{ "%.0f%%"|format(r.accuracy_score * 100) }}</span>
+            {% elif r.accuracy_score >= 0.4 %}
+                <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem; font-weight: bold; color: #d29922;">~ {{ "%.0f%%"|format(r.accuracy_score * 100) }}</span>
+            {% else %}
+                <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem; font-weight: bold; color: #ff3333;">&#10007; {{ "%.0f%%"|format(r.accuracy_score * 100) }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ── Contradiction Watch sidebar ── #}
+{% macro sidebar_contradictions(items, delay_base=3.3) %}
+    {% if items %}
+    <div class="paper-sidebar" style="animation-delay: {{ delay_base }}s;">
+        <h4>Contradiction Watch</h4>
+        {% for c in items %}
+        <div class="contra-item" style="animation-delay: {{ delay_base + 0.2 + loop.index0 * 0.15 }}s;">
+            <div><a href="{{ prefix }}/entry/{{ c.slug }}" style="font-size: 0.78rem; color: var(--text);">{{ c.title[:60] }}</a></div>
+            <div class="contra-claim">Now: <em>{{ (c.claim_now or '')[:80] }}</em></div>
+            <div class="contra-claim">Then: <em>{{ (c.claim_then or '')[:80] }}</em></div>
+            <span class="contra-sev-{{ c.significance or 'medium' }}">&#9632; {{ (c.significance or 'medium')|capitalize }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ── Expiring Narratives sidebar ── #}
+{% macro sidebar_expiring(items, delay_base=3.6) %}
+    {% if items %}
+    <div class="paper-sidebar" style="animation-delay: {{ delay_base }}s;">
+        <h4>Expiring Soon</h4>
+        {% for e in items %}
+        <div class="expire-item" style="animation-delay: {{ delay_base + 0.2 + loop.index0 * 0.15 }}s;">
+            <div><a href="{{ prefix }}/entry/{{ e.slug }}" style="font-size: 0.78rem; color: var(--text);">{{ e.title[:50] }}</a></div>
+            <span class="expire-half-life">{{ e.half_life }}</span>
+            {% if e.liquidity_score %}
+                <span style="font-size: 0.65rem; color: var(--text-dim); margin-left: 0.5rem;">{{ "%.0f%%"|format(e.liquidity_score * 100) }} liquid</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ── Game Theory Theater sidebar ── #}
+{% macro sidebar_game_theater(items, delay_base=3.9, show_equilibrium=false) %}
+    {% if items %}
+    <div class="paper-sidebar" style="animation-delay: {{ delay_base }}s;">
+        <h4>Game Theory Theater</h4>
+        {% set max_cnt = items[0].cnt if items else 1 %}
+        {% for g in items[:6] %}
+            {% if show_equilibrium %}
+            <div class="game-theater-row" style="animation-delay: {{ delay_base + 0.2 + loop.index0 * 0.12 }}s;">
+                <div class="game-bar-row">
+                    <span class="game-bar-label">{{ g.game_type }}</span>
+                    <div class="game-bar-track"><div class="game-bar-fill" style="width: {{ (g.cnt / max_cnt * 100)|int }}%;"></div></div>
+                    <span class="game-bar-count">{{ g.cnt }}</span>
+                </div>
+                {% if g.equilibrium %}
+                    <div class="game-theater-eq">{{ g.equilibrium[:80] }}</div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="game-bar-row">
+                <span class="game-bar-label">{{ g.game_type }}</span>
+                <div class="game-bar-track">
+                    <div class="game-bar-fill" style="width: {{ (g.cnt / max_cnt * 100)|int }}%; animation-delay: {{ delay_base + 0.2 + loop.index0 * 0.12 }}s;"></div>
+                </div>
+                <span class="game-bar-count">{{ g.cnt }}</span>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ── Wild Cards sidebar ── #}
+{% macro sidebar_wild_cards(items, delay_base=4.2) %}
+    {% if items %}
+    <div class="paper-sidebar" style="animation-delay: {{ delay_base }}s;">
+        <h4>Wild Cards</h4>
+        {% for w in items %}
+        <div class="wildcard-item" style="animation-delay: {{ delay_base + 0.2 + loop.index0 * 0.15 }}s;">
+            <div><span class="wildcard-icon">&#9888;</span><a href="{{ prefix }}/entry/{{ w.slug }}" style="color: var(--text);">{{ w.title[:55] }}</a></div>
+            <span class="wildcard-reflex">Reflexivity: {{ "%.0f%%"|format(w.reflexivity_risk * 100) }}</span>
+            {% if w.escalation_triggers %}
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem;">{{ w.escalation_triggers[:100] }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endmacro %}

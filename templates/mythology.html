@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Mythology — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .mythology-header {
+        margin-bottom: 1rem;
+    }
+    .mythology-header h1 {
+        font-size: 1rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+    .stats-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .stat-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+    }
+    .stat-item strong { color: var(--accent); }
+    .myth-section {
+        margin-bottom: 2rem;
+    }
+    .myth-section-title {
+        font-size: 0.85rem;
+        color: #b388ff;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .myth-count {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        margin-left: 0.5rem;
+    }
+    .myth-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.6rem;
+        border-left: 3px solid #b388ff;
+    }
+    .myth-card h4 {
+        font-size: 0.85rem;
+        margin-bottom: 0.2rem;
+    }
+    .myth-card h4 a { color: var(--text); }
+    .myth-card h4 a:hover { color: var(--accent); }
+    .myth-meta {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        margin-bottom: 0.3rem;
+    }
+    .myth-signal {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        line-height: 1.5;
+    }
+    .archetype-badge {
+        display: inline-block;
+        background: rgba(179,136,255,0.15);
+        border: 1px solid #2a1a4d;
+        color: #b388ff;
+        padding: 0.15rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.65rem;
+        font-weight: bold;
+        letter-spacing: 0.3px;
+    }
+</style>
+
+<div class="mythology-header">
+    <h1>EMERGENT MYTHOLOGY</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> articles with myth signals</div>
+    <div class="stat-item"><strong>{{ myth_groups|length }}</strong> archetypes detected</div>
+</div>
+
+{% if myth_groups %}
+    {% for archetype, items in myth_groups.items() %}
+    <div class="myth-section">
+        <div class="myth-section-title">
+            <span class="archetype-badge">{{ archetype }}</span>
+            <span class="myth-count">{{ items|length }} signals</span>
+        </div>
+        {% for item in items %}
+        <div class="myth-card">
+            <h4><a href="{{ prefix }}/entry/{{ item.article.slug }}">{{ item.article.title }}</a></h4>
+            <div class="myth-meta">
+                {{ item.article.source }}
+                {% if item.article.created %} &middot; {{ item.article.created[:16] }}{% endif %}
+            </div>
+            {% if item.signal is mapping %}
+            <div class="myth-signal">
+                {% if item.signal.signals %}**Signals:** {{ item.signal.signals }}<br>{% endif %}
+                {% if item.signal.cultural_function %}**Cultural function:** {{ item.signal.cultural_function }}<br>{% endif %}
+                {% if item.signal.power_function %}**Power function:** {{ item.signal.power_function }}{% endif %}
+            </div>
+            {% else %}
+            <div class="myth-signal">{{ item.signal }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No mythology signals detected yet.</p>
+    <p style="margin-top:0.5rem; font-size:0.75rem;">The mythology detection layer scans for archetypal patterns in recurring themes across reports.</p>
+</div>
+{% endif %}
+{% endblock %}

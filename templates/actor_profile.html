@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} — Actors — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .profile-header {
+        margin-bottom: 1.5rem;
+    }
+    .profile-header h1 {
+        font-size: 1.2rem;
+        color: var(--accent);
+        margin-bottom: 0.3rem;
+    }
+    .profile-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.8rem;
+        text-align: center;
+    }
+    .stat-card .stat-value {
+        font-size: 1.2rem;
+        color: var(--accent);
+        font-weight: bold;
+    }
+    .stat-card .stat-label {
+        font-size: 0.6rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 0.2rem;
+    }
+    .credibility-bar {
+        margin: 0.5rem 0;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .credibility-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
+    .cred-high { background: #3fb950; }
+    .cred-medium { background: #d29922; }
+    .cred-low { background: #f85149; }
+    .section-title {
+        font-size: 0.75rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .game-dist {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        margin-bottom: 1rem;
+    }
+    .game-chip {
+        background: rgba(255,170,0,0.1);
+        border: 1px solid #3a2a00;
+        color: #ffaa00;
+        padding: 0.2rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.65rem;
+    }
+    .co-actor-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        margin-bottom: 1rem;
+    }
+    .co-actor-chip {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.65rem;
+        text-decoration: none;
+    }
+    .co-actor-chip:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+    .timeline-article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.6rem 0.8rem;
+        margin-bottom: 0.4rem;
+    }
+    .timeline-article h4 {
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+    }
+    .timeline-article h4 a { color: var(--text); }
+    .timeline-article h4 a:hover { color: var(--accent); }
+    .ta-meta {
+        font-size: 0.6rem;
+        color: var(--text-dim);
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        font-size: 0.55rem;
+        font-weight: bold;
+        margin-right: 0.15rem;
+    }
+    .badge-game { background: rgba(255,170,0,0.15); color: #ffaa00; }
+    .badge-arc { background: rgba(0,230,118,0.1); color: #00e676; }
+    .badge-controlled { background: rgba(248,81,73,0.15); color: #f85149; }
+</style>
+
+<div class="profile-header">
+    <h1>{{ name }}</h1>
+    <div class="profile-subtitle">{{ total }} articles &middot; Tracked across all reports</div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ total }}</div>
+        <div class="stat-label">Articles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ controlled_count }}</div>
+        <div class="stat-label">Controlled Narratives</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ credibility }}</div>
+        <div class="stat-label">Credibility Score</div>
+        <div class="credibility-bar">
+            <div class="credibility-fill {% if credibility >= 0.7 %}cred-high{% elif credibility >= 0.4 %}cred-medium{% else %}cred-low{% endif %}" style="width: {{ (credibility * 100)|int }}%;"></div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ game_types|length }}</div>
+        <div class="stat-label">Game Types</div>
+    </div>
+</div>
+
+{% if game_types %}
+<div class="section-title">GAME TYPE DISTRIBUTION</div>
+<div class="game-dist">
+    {% for gt, count in game_types|dictsort(by='value', reverse=True) %}
+    <span class="game-chip">{{ gt }}: {{ count }}</span>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if co_actors %}
+<div class="section-title">CO-ACTORS</div>
+<div class="co-actor-list">
+    {% for actor, count in co_actors %}
+    <a href="{{ prefix }}/actors/{{ actor }}" class="co-actor-chip">{{ actor }} ({{ count }})</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if arc_counts %}
+<div class="section-title">NARRATIVE ARC DISTRIBUTION</div>
+<div class="game-dist">
+    {% for arc, count in arc_counts|dictsort(by='value', reverse=True) %}
+    <span class="game-chip" style="background:rgba(0,230,118,0.1);border-color:#1a3a2a;color:#00e676;">{{ arc }}: {{ count }}</span>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="section-title">ARTICLE TIMELINE</div>
+{% for art in articles %}
+<div class="timeline-article">
+    <h4><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h4>
+    <div class="ta-meta">
+        {{ art.source }}
+        {% if art.created %} &middot; {{ art.created[:16] }}{% endif %}
+        {% if art.game_type and art.game_type != 'none apparent' %}
+        <span class="badge badge-game">{{ art.game_type }}</span>
+        {% endif %}
+        {% if art.narrative_arc %}
+        <span class="badge badge-arc">{{ art.narrative_arc }}</span>
+        {% endif %}
+        {% if art.controlled_narrative %}
+        <span class="badge badge-controlled">CTRL</span>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

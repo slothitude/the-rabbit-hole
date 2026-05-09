@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}The Rabbit Hole Map — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .map-legend {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .filter-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.8rem;
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .filter-panel label {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        letter-spacing: 0.5px;
+    }
+    .filter-panel select, .filter-panel input {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 0.3rem 0.5rem;
+        font-family: inherit;
+        font-size: 0.7rem;
+        border-radius: 3px;
+    }
+    .filter-panel select:focus, .filter-panel input:focus { outline: none; border-color: var(--accent); }
+    .filter-panel .btn {
+        font-size: 0.65rem;
+        padding: 0.3rem 0.6rem;
+    }
+    #conspiracy-graph svg { cursor: grab; }
+    #conspiracy-graph svg:active { cursor: grabbing; }
+</style>
+
+<div class="map-header">
+    <h1 style="font-size:1rem; color:var(--accent); letter-spacing:1px; text-shadow: 0 0 10px rgba(200, 255, 0, 0.2);">
+        CONSPIRACY MAP — {{ total }} NODES
+    </h1>
+    <a href="{{ prefix }}/home" class="btn" style="font-size:0.7rem;">Back to the Rabbit Hole</a>
+</div>
+
+<div class="filter-panel">
+    <form method="get" action="{{ prefix }}/map" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <label>ACTOR</label>
+        <select name="actor">
+            <option value="">All</option>
+            {% for a in actors %}
+            <option value="{{ a.name }}" {% if actor_filter == a.name %}selected{% endif %}>{{ a.name }} ({{ a.count }})</option>
+            {% endfor %}
+        </select>
+        <label>GAME</label>
+        <select name="game_type">
+            <option value="">All</option>
+            {% for g in game_types %}
+            <option value="{{ g }}" {% if game_type_filter == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+        </select>
+        <label>ENERGY</label>
+        <select name="energy">
+            <option value="all" {% if energy != 'high' and energy != 'medium' %}selected{% endif %}>All</option>
+            <option value="high" {% if energy == 'high' %}selected{% endif %}>High (70%+)</option>
+            <option value="medium" {% if energy == 'medium' %}selected{% endif %}>Medium (40%+)</option>
+        </select>
+        <label>
+            <input type="checkbox" name="hide_articles" value="1" {% if hide_articles %}checked{% endif %} onchange="this.form.submit()">
+            Hide Articles
+        </label>
+        <button type="submit" class="btn">Filter</button>
+    </form>
+</div>
+
+<div class="map-legend">
+    {% for t in range(1, 6) %}
+    <div class="legend-item">
+        <span class="legend-dot" style="background: {{ tier_colors[t] }};"></span>
+        <span>Tier {{ t }}: {{ tier_names[t] }}</span>
+    </div>
+    {% endfor %}
+    <div class="legend-item">
+        <span class="legend-dot" style="background: #58a6ff; width:6px; height:6px; opacity:0.5;"></span>
+        <span>News Article</span>
+    </div>
+</div>
+
+<div id="conspiracy-graph"></div>
+
+<script src="{{ prefix }}/static/js/d3.v7.min.js"></script>
+<script>
+(function() {
+    var prefix = "{{ prefix }}";
+    var tierColors = {{ tier_colors | tojson }};
+    var data = {{ graph_data | tojson }};
+
+    var width = document.getElementById('conspiracy-graph').clientWidth;
+    var height = 600;
+
+    var svg = d3.select("#conspiracy-graph")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    var g = svg.append("g");
+
+    var zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", function(event) {
+            g.attr("transform", event.transform);
+        });
+    svg.call(zoom);
+
+    var simulation = d3.forceSimulation(data.nodes)
+        .force("link", d3.forceLink(data.edges).id(function(d) { return d.id; }).distance(60))
+        .force("charge", d3.forceManyBody().strength(-80))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(8));
+
+    var link = g.append("g")
+        .selectAll("line")
+        .data(data.edges)
+        .join("line")
+        .attr("stroke", function(d) {
+            return d.predicate && d.predicate.startsWith("shared:") ? "#2a4a1a" : "#30363d";
+        })
+        .attr("stroke-width", function(d) {
+            return d.predicate && d.predicate.startsWith("shared:") ? 0.3 : 0.5;
+        })
+        .attr("stroke-opacity", function(d) {
+            return d.predicate && d.predicate.startsWith("shared:") ? 0.3 : 0.6;
+        });
+
+    var node = g.append("g")
+        .selectAll("a")
+        .data(data.nodes)
+        .join("a")
+        .attr("xlink:href", function(d) { return prefix + "/entry/" + d.id; })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    node.append("circle")
+        .attr("r", function(d) {
+            if (d.is_article) {
+                var e = d.narrative_energy || 0.5;
+                return 2 + (e * 4); // energy-scaled radius
+            }
+            return d.tier ? 6 : 4;
+        })
+        .attr("fill", function(d) {
+            if (d.is_article) {
+                var e = d.narrative_energy || 0.5;
+                if (e >= 0.8) return "#ff3333";
+                if (e >= 0.6) return "#ff8c00";
+                if (e >= 0.4) return "#ffd500";
+                return "#58a6ff";
+            }
+            return tierColors[d.tier] || "#8b949e";
+        })
+        .attr("stroke", "#0d1117")
+        .attr("stroke-width", function(d) { return d.is_article ? 0.5 : 1.5; })
+        .attr("opacity", function(d) { return d.is_article ? 0.7 : 1.0; });
+
+    node.append("title")
+        .text(function(d) {
+            var tip = d.title + " (Tier " + d.tier + ")";
+            if (d.is_article && d.narrative_energy) {
+                tip += " Energy: " + Math.round(d.narrative_energy * 100) + "%";
+            }
+            return tip;
+        });
+
+    var label = g.append("g")
+        .selectAll("text")
+        .data(data.nodes)
+        .join("text")
+        .text(function(d) { return d.title.length > 20 ? d.title.substring(0, 18) + "..." : d.title; })
+        .attr("font-size", 8)
+        .attr("fill", "#8b949e")
+        .attr("dx", 8)
+        .attr("dy", 3);
+
+    simulation.on("tick", function() {
+        link
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+
+        node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+        label
+            .attr("x", function(d) { return d.x; })
+            .attr("y", function(d) { return d.y; });
+    });
+
+    function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+
+    function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+})();
+</script>
+{% endblock %}

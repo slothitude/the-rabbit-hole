@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Articles — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .articles-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .articles-header h1 {
+        font-size: 1rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+    .filter-bar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+    .filter-bar select {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 0.3rem 0.5rem;
+        font-family: inherit;
+        font-size: 0.7rem;
+        border-radius: 3px;
+    }
+    .filter-bar select:focus { outline: none; border-color: var(--accent); }
+    .article-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.8rem;
+        transition: border-color 0.2s;
+    }
+    .article-card:hover { border-color: var(--accent-dim); }
+    .article-card h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.3rem;
+    }
+    .article-card h3 a { color: var(--accent); }
+    .article-meta {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        margin-bottom: 0.4rem;
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.1rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.6rem;
+        font-weight: bold;
+        letter-spacing: 0.3px;
+        margin-right: 0.2rem;
+        margin-top: 0.2rem;
+    }
+    .badge-game { background: rgba(255, 170, 0, 0.15); color: #ffaa00; border: 1px solid #3a2a00; }
+    .badge-bias { background: rgba(88, 166, 255, 0.1); color: #58a6ff; border: 1px solid #1a3a4d; }
+    .badge-controlled { background: rgba(248, 81, 73, 0.15); color: #f85149; border: 1px solid #4d1a1a; }
+    .badge-arc { background: rgba(0, 230, 118, 0.1); color: #00e676; border: 1px solid #1a3a2a; }
+    .badge-action { background: rgba(179, 136, 255, 0.1); color: #b388ff; border: 1px solid #2a1a4d; }
+    .actor-tag {
+        display: inline-block;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        padding: 0.1rem 0.4rem;
+        font-size: 0.6rem;
+        border-radius: 10px;
+        margin-right: 0.2rem;
+        text-decoration: none;
+    }
+    .actor-tag:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+    .stats-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .stat-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+    }
+    .stat-item strong { color: var(--accent); }
+    .pagination {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+</style>
+
+<div class="articles-header">
+    <h1>ARTICLE NODES</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> articles</div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{{ prefix }}/articles" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <select name="arc" onchange="this.form.submit()">
+            <option value="">All Arcs</option>
+            {% for a in arcs %}
+            <option value="{{ a }}" {% if narrative_arc == a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+        <select name="game_type" onchange="this.form.submit()">
+            <option value="">All Games</option>
+            {% for g in game_types %}
+            <option value="{{ g }}" {% if game_type == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+        </select>
+        <select name="actor" onchange="this.form.submit()">
+            <option value="">All Actors</option>
+            {% for a in actors %}
+            <option value="{{ a.name }}" {% if actor == a.name %}selected{% endif %}>{{ a.name }} ({{ a.count }})</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if articles %}
+    {% for art in articles %}
+    <div class="article-card">
+        <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+        <div class="article-meta">
+            {{ art.source }}
+            {% if art.created %} &middot; {{ art.created[:16] }}{% endif %}
+            {% if art.hitchhiker_summary %}<br><span style="color:var(--text-dim);font-size:0.65rem;">{{ art.hitchhiker_summary[:150] }}{% if art.hitchhiker_summary|length > 150 %}...{% endif %}</span>{% endif %}
+        </div>
+        <div>
+            {% if art.game_type and art.game_type != 'none apparent' %}
+            <span class="badge badge-game">{{ art.game_type }}</span>
+            {% endif %}
+            {% if art.bias_type and art.bias_type != 'unknown' and art.bias_type != 'none detected' %}
+            <span class="badge badge-bias">{{ art.bias_type }}</span>
+            {% endif %}
+            {% if art.controlled_narrative %}
+            <span class="badge badge-controlled">CONTROLLED</span>
+            {% endif %}
+            {% if art.narrative_arc %}
+            <span class="badge badge-arc">{{ art.narrative_arc }}</span>
+            {% endif %}
+            {% if art.actionability and art.actionability != 'low' %}
+            <span class="badge badge-action">{{ art.actionability }}</span>
+            {% endif %}
+        </div>
+        {% if art.actors %}
+        <div style="margin-top:0.3rem;">
+            {% for actor in art.actors[:5] %}
+            <a href="{{ prefix }}/actors/{{ actor }}" class="actor-tag">{{ actor }}</a>
+            {% endfor %}
+            {% if art.actors|length > 5 %}
+            <span style="font-size:0.6rem;color:var(--text-dim);">+{{ art.actors|length - 5 }} more</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if total > per_page %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ prefix }}/articles?page={{ page - 1 }}{% if actor %}&actor={{ actor }}{% endif %}{% if game_type %}&game_type={{ game_type }}{% endif %}{% if narrative_arc %}&arc={{ narrative_arc }}{% endif %}" class="btn" style="font-size:0.7rem;">Previous</a>
+        {% endif %}
+        <span style="font-size:0.7rem; color:var(--text-dim); padding:0.3rem;">
+            Page {{ page }} of {{ (total + per_page - 1) // per_page }}
+        </span>
+        {% if page * per_page < total %}
+        <a href="{{ prefix }}/articles?page={{ page + 1 }}{% if actor %}&actor={{ actor }}{% endif %}{% if game_type %}&game_type={{ game_type }}{% endif %}{% if narrative_arc %}&arc={{ narrative_arc }}{% endif %}" class="btn" style="font-size:0.7rem;">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No articles yet. Run the reporter to generate article nodes.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Actors — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .actors-header {
+        margin-bottom: 1rem;
+    }
+    .actors-header h1 {
+        font-size: 1rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+    .stats-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .stat-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+    }
+    .stat-item strong { color: var(--accent); }
+    .actor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 0.8rem;
+    }
+    .actor-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1rem;
+        transition: border-color 0.2s;
+    }
+    .actor-card:hover { border-color: var(--accent-dim); }
+    .actor-card h3 {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+    .actor-card h3 a { color: var(--accent); }
+    .actor-stats {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .actor-bar {
+        margin-top: 0.5rem;
+        height: 3px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .actor-bar-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 2px;
+    }
+</style>
+
+<div class="actors-header">
+    <h1>ACTOR PROFILES</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> actors tracked</div>
+</div>
+
+{% if actors %}
+<div class="actor-grid">
+    {% for actor in actors %}
+    <div class="actor-card">
+        <h3><a href="{{ prefix }}/actors/{{ actor.name }}">{{ actor.name }}</a></h3>
+        <div class="actor-stats">{{ actor.count }} articles</div>
+        <div class="actor-bar">
+            <div class="actor-bar-fill" style="width: {{ (actor.count / actors[0].count * 100)|int }}%;"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No actors tracked yet. Run the reporter to generate article nodes with actor data.</p>
+</div>
+{% endif %}
+{% endblock %}

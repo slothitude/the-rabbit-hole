@@ -1,0 +1,65 @@
+{# ── TODAY tab: Real articles with regional sub-tabs ── #}
+{% if today_articles %}
+    <div class="tab-bar">
+        <button class="tab-btn active" data-section="today-front" data-top="today">Front<span class="tab-count">({{ today_total }})</span></button>
+        <button class="tab-btn" data-section="today-local" data-top="today">Local<span class="tab-count">({{ today_section_counts.local }})</span></button>
+        <button class="tab-btn" data-section="today-regional" data-top="today">Regional<span class="tab-count">({{ today_section_counts.regional }})</span></button>
+        <button class="tab-btn" data-section="today-australia" data-top="today">Australia<span class="tab-count">({{ today_section_counts.australia }})</span></button>
+        <button class="tab-btn" data-section="today-world" data-top="today">World<span class="tab-count">({{ today_section_counts.international }})</span></button>
+    </div>
+
+    <div class="paper-section active" id="section-today-front">
+        {% call newspaper_layout(today_articles, delay_base=3.0) %}
+        <div class="sidebar-col">
+            {{ sidebar_contradictions(contradictions, 3.2) }}
+            {{ sidebar_expiring(expiring, 3.5) }}
+            {{ sidebar_game_theater(game_dist, 3.8) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-today-local">
+        {% call newspaper_layout(today_sections.local, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_contradictions(contradictions, 0.4) }}
+            {{ sidebar_expiring(expiring, 0.7) }}
+            {{ sidebar_game_theater(game_dist, 1.0) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-today-regional">
+        {% call newspaper_layout(today_sections.regional, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_contradictions(contradictions, 0.4) }}
+            {{ sidebar_expiring(expiring, 0.7) }}
+            {{ sidebar_game_theater(game_dist, 1.0) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-today-australia">
+        {% call newspaper_layout(today_sections.australia, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_contradictions(contradictions, 0.4) }}
+            {{ sidebar_expiring(expiring, 0.7) }}
+            {{ sidebar_game_theater(game_dist, 1.0) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <div class="paper-section" id="section-today-world">
+        {% call newspaper_layout(today_sections.international, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_contradictions(contradictions, 0.4) }}
+            {{ sidebar_expiring(expiring, 0.7) }}
+            {{ sidebar_game_theater(game_dist, 1.0) }}
+        </div>
+        {% endcall %}
+    </div>
+{% else %}
+    <div class="empty-paper">
+        <p>The presses are quiet. No articles in the current news cycle.</p>
+        <p style="margin-top: 0.5rem;">Next edition in {{ hours_until }} hours.</p>
+    </div>
+{% endif %}

@@ -1,0 +1,311 @@
+{# ── FUTURE tab: 72h+ forecasts + phase shifts + persistence + mythology ── #}
+{% if future_preds %}
+    <div class="tab-bar">
+        <button class="tab-btn active" data-section="fut-forecasts" data-top="future">Forecasts<span class="tab-count">({{ future_total }})</span></button>
+        <button class="tab-btn" data-section="fut-shifts" data-top="future">Phase Shifts<span class="tab-count">({{ phase_shifts|length }})</span></button>
+        <button class="tab-btn" data-section="fut-persistence" data-top="future">Persistence<span class="tab-count">({{ half_lives|length }})</span></button>
+        <button class="tab-btn" data-section="fut-mythology" data-top="future">Mythology<span class="tab-count">({{ mythology|length }})</span></button>
+    </div>
+
+    <!-- ═══ Forecasts sub-tab ═══ -->
+    <div class="paper-section active" id="section-fut-forecasts">
+        {% set lead = future_preds[0] %}
+        <div class="lead-story {{ 'is-prediction' if lead.get('is_prediction') }}" style="animation-delay: 0.2s;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap;">
+                {% if lead.get('is_prediction') %}
+                    <span class="badge-prediction">Prediction</span>
+                    {% if lead.scored %}
+                        {% if lead.accuracy_score >= 0.7 %}
+                            <span class="accuracy-badge accuracy-high">&#10003; {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% elif lead.accuracy_score >= 0.4 %}
+                            <span class="accuracy-badge accuracy-mid">~ {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% else %}
+                            <span class="accuracy-badge accuracy-low">&#10007; {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    {% if lead.phase_shift_risk == 'high' %}
+                        <span class="badge-phase badge-phase-high">Phase Shift</span>
+                    {% endif %}
+                    {% if lead.get('equilibrium_shift') and lead.equilibrium_shift != 'none' %}
+                        <span class="badge-shift">Eq: {{ lead.equilibrium_shift }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="lead-headline">
+                {% if lead.get('is_prediction') %}{{ lead.title }}
+                {% else %}<a href="{{ prefix }}/entry/{{ lead.slug }}">{{ lead.title }}</a>{% endif %}
+            </div>
+            {% if lead.get('is_prediction') and lead.source_title %}
+                <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ lead.source_slug }}">{{ lead.source_title }}</a></div>
+            {% endif %}
+            {% if lead.hitchhiker_summary %}
+                <div class="lead-deck">{{ lead.hitchhiker_summary }}</div>
+            {% endif %}
+            <div class="lead-meta">
+                {% if lead.actors %}
+                    <span class="lead-byline">{{ lead.actors[:4] | join(', ') }}</span>
+                {% endif %}
+                {% if lead.get('is_prediction') %}
+                    &middot; {{ lead.get('confidence', 'medium') | capitalize }} confidence
+                    {% if lead.game_type %} &middot; <span class="tag">{{ lead.game_type }}</span>{% endif %}
+                {% else %}
+                    &middot; {{ lead.source or 'Unknown' }}
+                    {% if lead.game_type %} &middot; <span class="tag">{{ lead.game_type }}</span>{% endif %}
+                    {% if lead.half_life %} &middot; <span style="color: #d4a017;">{{ lead.half_life }}</span>{% endif %}
+                {% endif %}
+            </div>
+            {% if lead.get('is_prediction') and lead.predicted_claims %}
+                <div class="lead-forecast">
+                    <strong>Predicted Claims:</strong>
+                    <ul style="margin: 0.3rem 0 0 1rem; padding: 0;">
+                        {% for claim in lead.predicted_claims[:5] %}<li>{{ claim }}</li>{% endfor %}
+                    </ul>
+                </div>
+            {% elif lead.forecast and not lead.get('is_prediction') %}
+                <div class="lead-forecast">
+                    <strong>Long-range Forecast:</strong> {{ lead.forecast[:400] }}
+                </div>
+            {% endif %}
+            {% if not lead.get('is_prediction') %}
+            <div class="lead-meters">
+                <div class="meter meter-future">
+                    Future
+                    <div class="meter-bar"><div class="meter-fill" style="width: {{ [0, [lead.future_score * 100, 100]|min]|max|int }}%"></div></div>
+                    {{ "%.2f"|format(lead.future_score) }}
+                </div>
+                <div class="meter meter-energy">
+                    Energy
+                    <div class="meter-bar"><div class="meter-fill" style="width: {{ (lead.narrative_energy * 100)|int }}%"></div></div>
+                    {{ "%.0f%%"|format(lead.narrative_energy * 100) }}
+                </div>
+                <div class="meter meter-elite">
+                    Elite
+                    <div class="meter-bar"><div class="meter-fill" style="width: {{ (lead.elite_utility * 100)|int }}%"></div></div>
+                    {{ "%.0f%%"|format(lead.elite_utility * 100) }}
+                </div>
+                <div class="meter meter-meme">
+                    Meme
+                    <div class="meter-bar"><div class="meter-fill" style="width: {{ (lead.meme_portability * 100)|int }}%"></div></div>
+                    {{ "%.0f%%"|format(lead.meme_portability * 100) }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="below-fold">
+            <div class="story-col">
+                {% set ns = namespace(count=0) %}
+                {% for art in future_preds[1:] %}
+                    {% if loop.index0 < (future_preds|length - 1) // 2 + 1 %}
+                    {% set ns.count = ns.count + 1 %}
+                    <div class="story-card {{ 'is-prediction' if art.get('is_prediction') }}" style="animation-delay: {{ 0.4 + ns.count * 0.12 }}s;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+                            <span class="importance-rank">{{ loop.index + 1 }}</span>
+                            {% if art.get('is_prediction') %}
+                                <span class="badge-prediction">Prediction</span>
+                            {% elif art.phase_shift_risk == 'high' %}
+                                <span class="badge-phase badge-phase-high">Phase</span>
+                            {% endif %}
+                        </div>
+                        <h3>
+                            {% if art.get('is_prediction') %}{{ art.title }}
+                            {% else %}<a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>{% endif %}
+                        </h3>
+                        {% if art.get('is_prediction') and art.source_title %}
+                            <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ art.source_slug }}">{{ art.source_title[:60] }}</a></div>
+                        {% endif %}
+                        {% if art.hitchhiker_summary %}
+                            <div class="story-deck">{{ art.hitchhiker_summary[:200] }}</div>
+                        {% endif %}
+                        <div class="story-meta">
+                            {% if art.actors %}{{ art.actors[:3] | join(', ') }} &middot; {% endif %}
+                            {% if art.get('is_prediction') %}{{ art.get('confidence', 'medium') | capitalize }} confidence
+                            {% else %}{{ art.source or '' }}{% endif %}
+                            {% if art.game_type %} &middot; <span class="tag">{{ art.game_type }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="story-col">
+                {% set ns2 = namespace(count=0) %}
+                {% for art in future_preds[1:] %}
+                    {% if loop.index0 >= (future_preds|length - 1) // 2 + 1 %}
+                    {% set ns2.count = ns2.count + 1 %}
+                    <div class="story-card {{ 'is-prediction' if art.get('is_prediction') }}" style="animation-delay: {{ 0.4 + ns2.count * 0.12 }}s;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+                            <span class="importance-rank">{{ loop.index + 1 }}</span>
+                            {% if art.get('is_prediction') %}
+                                <span class="badge-prediction">Prediction</span>
+                            {% elif art.phase_shift_risk == 'high' %}
+                                <span class="badge-phase badge-phase-high">Phase</span>
+                            {% endif %}
+                        </div>
+                        <h3>
+                            {% if art.get('is_prediction') %}{{ art.title }}
+                            {% else %}<a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>{% endif %}
+                        </h3>
+                        {% if art.get('is_prediction') and art.source_title %}
+                            <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ art.source_slug }}">{{ art.source_title[:60] }}</a></div>
+                        {% endif %}
+                        {% if art.hitchhiker_summary %}
+                            <div class="story-deck">{{ art.hitchhiker_summary[:200] }}</div>
+                        {% endif %}
+                        <div class="story-meta">
+                            {% if art.actors %}{{ art.actors[:3] | join(', ') }} &middot; {% endif %}
+                            {% if art.get('is_prediction') %}{{ art.get('confidence', 'medium') | capitalize }} confidence
+                            {% else %}{{ art.source or '' }}{% endif %}
+                            {% if art.game_type %} &middot; <span class="tag">{{ art.game_type }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {{ sidebar_track_record(accuracy_stats, 0.3) }}
+                {{ sidebar_game_theater(game_dist, 0.6, show_equilibrium=true) }}
+                {{ sidebar_wild_cards(wild_cards, 0.9) }}
+                {{ sidebar_contradictions(contradictions, 1.2) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Phase Shifts sub-tab ═══ -->
+    <div class="paper-section" id="section-fut-shifts">
+        {% if phase_shifts %}
+        <div class="two-col-grid">
+            <div>
+                {% for p in phase_shifts %}
+                <div class="phase-card {{ 'shift-' + (p.equilibrium_shift or 'none') }}" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4><a href="{{ prefix }}/entry/{{ p.slug }}">{{ p.title[:80] }}</a></h4>
+                    <div class="phase-meta">
+                        {% if p.equilibrium_shift and p.equilibrium_shift != 'none' %}
+                            <span class="badge-shift">Shift: {{ p.equilibrium_shift }}</span>
+                        {% endif %}
+                        {% if p.phase_shift_risk %}
+                            <span class="badge-phase badge-phase-{{ p.phase_shift_risk }}">Phase: {{ p.phase_shift_risk }}</span>
+                        {% endif %}
+                        {% if p.game_type %} &middot; {{ p.game_type }}{% endif %}
+                        {% if p.created %} &middot; {{ p.created[:10] }}{% endif %}
+                    </div>
+                    {% if p.forecast %}
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem; font-style: italic;">{{ p.forecast[:200] }}</div>
+                    {% endif %}
+                    {% if p.pressure_vector %}
+                        <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.3rem;">
+                            <strong style="color: #ff3333;">Pressure:</strong> {{ p.pressure_vector[:150] }}
+                        </div>
+                    {% endif %}
+                    {% if p.stabilization_vector %}
+                        <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem;">
+                            <strong style="color: #3fb950;">Stabilization:</strong> {{ p.stabilization_vector[:150] }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {% if game_dist %}
+                <div class="paper-sidebar" style="animation-delay: 0.3s;">
+                    <h4>Escalation Patterns</h4>
+                    {% for g in game_dist[:6] %}
+                        {% if g.escalation_pattern %}
+                        <div class="game-theater-row" style="animation-delay: {{ 0.5 + loop.index0 * 0.12 }}s;">
+                            <div style="font-weight: bold; color: var(--text);">{{ g.game_type }} ({{ g.cnt }})</div>
+                            <div class="game-theater-eq">{{ g.escalation_pattern[:90] }}</div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No phase shifts detected in the current window.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ═══ Persistence sub-tab ═══ -->
+    <div class="paper-section" id="section-fut-persistence">
+        {% if half_lives %}
+        <div class="two-col-grid">
+            <div>
+                {% for h in half_lives %}
+                <div class="halflife-row" style="animation-delay: {{ 0.2 + loop.index0 * 0.08 }}s;">
+                    <span class="halflife-rank">#{{ loop.index + 1 }}</span>
+                    <span class="halflife-title"><a href="{{ prefix }}/entry/{{ h.slug }}">{{ h.title[:65] }}</a></span>
+                    <span class="halflife-value">{{ h.half_life }}</span>
+                    <div class="halflife-bar-track">
+                        {% set hl_weeks = {
+                            'w': h.half_life.replace('w','')|float if 'w' in h.half_life else 0,
+                            'd': h.half_life.replace('d','')|float / 7.0 if 'd' in h.half_life else 0,
+                            'h': h.half_life.replace('h','')|float / 168.0 if 'h' in h.half_life else 0
+                        } %}
+                        {% set hl_val = [hl_weeks.w, hl_weeks.d, hl_weeks.h]|max %}
+                        {% set hl_max = 4.0 %}
+                        <div class="halflife-bar-fill" style="width: {{ [0, [hl_val / hl_max * 100, 100]|min]|max|int }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {{ sidebar_expiring(expiring, 0.3) }}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No half-life data available.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ═══ Mythology sub-tab ═══ -->
+    <div class="paper-section" id="section-fut-mythology">
+        {% if mythology %}
+        <div class="two-col-grid">
+            <div>
+                {% for m in mythology %}
+                <div class="myth-card" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4><a href="{{ prefix }}/entry/{{ m.slug }}">{{ m.title[:75] }}</a></h4>
+                    <div>
+                        {% if m.archetype %}<span class="myth-archetype">{{ m.archetype }}</span>{% endif %}
+                        {% if m.narrative_arc %}<span class="tag">{{ m.narrative_arc }}</span>{% endif %}
+                    </div>
+                    {% if m.signals %}
+                        <div class="myth-detail"><strong>Signals:</strong> {{ m.signals[:200] }}</div>
+                    {% endif %}
+                    {% if m.cultural_function %}
+                        <div class="myth-detail"><strong>Cultural Function:</strong> {{ m.cultural_function[:200] }}</div>
+                    {% endif %}
+                    {% if m.power_function %}
+                        <div class="myth-detail"><strong>Power Function:</strong> {{ m.power_function[:200] }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {% if game_dist %}
+                <div class="paper-sidebar" style="animation-delay: 0.3s;">
+                    <h4>Wildcards by Game Type</h4>
+                    {% for g in game_dist[:6] %}
+                        {% if g.wildcard_type %}
+                        <div class="game-theater-row" style="animation-delay: {{ 0.5 + loop.index0 * 0.12 }}s;">
+                            <div style="font-weight: bold; color: var(--text);">{{ g.game_type }}</div>
+                            <div class="game-theater-eq">{{ g.wildcard_type[:90] }}</div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No mythology signals detected in the current window.</p></div>
+        {% endif %}
+    </div>
+
+{% else %}
+    <div class="empty-paper">
+        <p>The horizon is empty. No forecast data available.</p>
+        <p style="margin-top: 0.5rem;">Next edition in {{ hours_until }} hours.</p>
+    </div>
+{% endif %}

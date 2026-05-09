@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.title }} — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<div class="grid">
+    <div>
+        <div style="margin-bottom:1rem;">
+            <a href="{{ prefix }}/home" class="btn" style="font-size:0.7rem;">Back to the Rabbit Hole</a>
+        </div>
+
+        {% if entry.hitchhiker_summary %}
+        <div style="margin-bottom:1rem;">
+            {% if entry.tier %}
+            <span class="tier-badge tier-{{ entry.tier }}">TIER {{ entry.tier }} — {{ tier_name }}</span>
+            {% endif %}
+            {% if entry.evidence %}
+            <span class="evidence-badge evidence-{{ entry.evidence }}">{{ entry.evidence }}</span>
+            {% endif %}
+            {% if entry.category %}
+            <a href="{{ prefix }}/category/{{ entry.category|lower|replace(' ', '-')|replace('&', 'and') }}" class="tag">{{ entry.category }}</a>
+            {% endif %}
+        </div>
+
+        <div class="hitchhiker-card">
+            <div class="summary-text">{{ entry.hitchhiker_summary }}</div>
+        </div>
+
+        <button class="research-toggle" onclick="document.getElementById('research-content').classList.toggle('active'); this.textContent = document.getElementById('research-content').classList.contains('active') ? 'Hide the boring evidence' : 'Show me the boring evidence';">
+            Show me the boring evidence
+        </button>
+
+        <div id="research-content" class="research-content">
+            <div class="entry-body">
+                {{ html_body|safe }}
+            </div>
+        </div>
+
+        {% if entry.news_connections %}
+        <div class="sidebar" style="margin-top:1.5rem;">
+            <h3>NEWS CONNECTIONS</h3>
+            <ul>
+                {% for nc in entry.news_connections %}
+                <li>{{ nc }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="entry-body">
+            {{ html_body|safe }}
+        </div>
+        {% endif %}
+
+        {% if entry.tags %}
+        <div style="margin-top:1.5rem;">
+            {% for tag in entry.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="margin-top:1rem; font-size:0.7rem; color:var(--text-dim);">
+            Catalogued: {{ entry.created[:10] if entry.created else 'unknown' }}
+            {% if entry.updated and entry.updated[:10] != (entry.created[:10] if entry.created else '') %}
+            | Updated: {{ entry.updated[:10] }}
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        {% if entry.image %}
+        <div class="sidebar" style="margin-bottom:1rem;">
+            <img src="{{ entry.image }}" alt="{{ entry.title }}" style="width:100%; border-radius:4px;">
+        </div>
+        {% endif %}
+
+        {% if entry.seealso %}
+        <div class="sidebar">
+            <h3>SEE ALSO</h3>
+            <ul>
+                {% for s in entry.seealso %}
+                <li><a href="{{ prefix }}/entry/{{ s }}">{{ s }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if outgoing %}
+        <div class="sidebar">
+            <h3>OUTGOING RELATIONS</h3>
+            <ul>
+                {% for t in outgoing %}
+                <li>
+                    <span class="predicate">{{ t.predicate }}</span> →
+                    <a href="{{ prefix }}/entry/{{ t.object }}">{{ t.object }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if incoming %}
+        <div class="sidebar">
+            <h3>INCOMING RELATIONS</h3>
+            <ul>
+                {% for t in incoming %}
+                <li>
+                    <a href="{{ prefix }}/entry/{{ t.subject }}">{{ t.subject }}</a>
+                    <span class="predicate">→ {{ t.predicate }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

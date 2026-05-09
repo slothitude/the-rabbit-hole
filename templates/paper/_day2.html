@@ -1,0 +1,176 @@
+{# ── DAY+2 tab: 48h predictions + pressure map + markets + narratives ── #}
+{% if dayafter_preds %}
+    <div class="tab-bar">
+        <button class="tab-btn active" data-section="d2-predictions" data-top="day2">Predictions<span class="tab-count">({{ dayafter_total }})</span></button>
+        <button class="tab-btn" data-section="d2-pressure" data-top="day2">Pressure Map<span class="tab-count">({{ pressure_map|length }})</span></button>
+        <button class="tab-btn" data-section="d2-markets" data-top="day2">Markets<span class="tab-count">({{ polymarket|length }})</span></button>
+        <button class="tab-btn" data-section="d2-narratives" data-top="day2">Narratives<span class="tab-count">({{ cheap_expensive|length }})</span></button>
+    </div>
+
+    <!-- ═══ Predictions sub-tab ═══ -->
+    <div class="paper-section active" id="section-d2-predictions">
+        {% call newspaper_layout(dayafter_preds, delay_base=0.2) %}
+        <div class="sidebar-col">
+            {{ sidebar_track_record(accuracy_stats, 0.3) }}
+            {{ sidebar_game_theater(game_dist, 0.6, show_equilibrium=true) }}
+            {{ sidebar_wild_cards(wild_cards, 0.9) }}
+            {{ sidebar_expiring(expiring, 1.2) }}
+            {{ sidebar_contradictions(contradictions, 1.5) }}
+        </div>
+        {% endcall %}
+    </div>
+
+    <!-- ═══ Pressure Map sub-tab ═══ -->
+    <div class="paper-section" id="section-d2-pressure">
+        {% if pressure_map %}
+        <div class="two-col-grid">
+            <div>
+                {% for p in pressure_map %}
+                <div class="pressure-row" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4><a href="{{ prefix }}/entry/{{ p.slug }}">{{ p.title[:80] }}</a></h4>
+                    <div class="pressure-bars">
+                        <span class="pressure-label" style="color: #3fb950;">{{ "%.1f"|format(p.stabilization_score) }}</span>
+                        <div class="pressure-track">
+                            <div class="pressure-center"></div>
+                            {% set esc_pct = [0, [p.pressure_score * 50, 50]|min]|max|int %}
+                            {% set deesc_pct = [0, [p.stabilization_score * 50, 50]|min]|max|int %}
+                            <div class="pressure-escalate" style="width: {{ esc_pct }}%; right: 50%;"></div>
+                            <div class="pressure-deescalate" style="width: {{ deesc_pct }}%; left: 50%;"></div>
+                        </div>
+                        <span class="pressure-label" style="color: #ff3333; text-align: right;">{{ "%.1f"|format(p.pressure_score) }}</span>
+                    </div>
+                    <div class="pressure-meta">
+                        Net: <strong style="color: {% if p.net_pressure > 0 %}#ff3333{% else %}#3fb950{% endif %};">{{ "%.2f"|format(p.net_pressure) }}</strong>
+                        {% if p.game_type %} &middot; {{ p.game_type }}{% endif %}
+                        {% if p.created %} &middot; {{ p.created[:10] }}{% endif %}
+                    </div>
+                    {% if p.offramps and p.offramps.strip() %}
+                        <div style="margin-top: 0.3rem;">
+                            {% for offramp in p.offramps.split(',')[:3] %}
+                                <span class="pressure-tag pressure-tag-offramp">{{ offramp.strip()[:40] }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if p.escalation_triggers and p.escalation_triggers.strip() %}
+                        <div style="margin-top: 0.2rem;">
+                            {% for trigger in p.escalation_triggers.split(',')[:3] %}
+                                <span class="pressure-tag pressure-tag-trigger">{{ trigger.strip()[:40] }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {% if game_dist %}
+                <div class="paper-sidebar" style="animation-delay: 0.3s;">
+                    <h4>Equilibria</h4>
+                    {% for g in game_dist[:6] %}
+                        {% if g.equilibrium %}
+                        <div class="game-theater-row" style="animation-delay: {{ 0.5 + loop.index0 * 0.12 }}s;">
+                            <div style="font-weight: bold; color: var(--text);">{{ g.game_type }} ({{ g.cnt }})</div>
+                            <div class="game-theater-eq">{{ g.equilibrium[:90] }}</div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No pressure data in the current window.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ═══ Markets sub-tab ═══ -->
+    <div class="paper-section" id="section-d2-markets">
+        {% if polymarket %}
+        <div class="two-col-grid">
+            <div>
+                {% for m in polymarket %}
+                <div class="market-card" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4>{{ m.title[:90] }}</h4>
+                    <div class="market-meta">
+                        {{ m.source }}{% if m.created %} &middot; {{ m.created[:10] }}{% endif %}
+                        {% if m.game_type %} &middot; <span class="tag">{{ m.game_type }}</span>{% endif %}
+                    </div>
+                    {% if m.hitchhiker_summary %}
+                        <div style="font-size: 0.78rem; color: var(--text-dim); font-style: italic; margin-bottom: 0.4rem;">{{ m.hitchhiker_summary[:200] }}</div>
+                    {% endif %}
+                    {% if m.forecast %}
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3rem;">
+                            <strong style="color: #d4a017;">Forecast:</strong> {{ m.forecast[:200] }}
+                        </div>
+                    {% endif %}
+                    {% if m.liquidity_score and m.liquidity_score > 0 %}
+                    <div>
+                        <div class="odds-bar">
+                            <div class="odds-fill odds-fill-yes" style="width: {{ (m.liquidity_score * 100)|int }}%;"></div>
+                        </div>
+                        <div class="odds-label">
+                            <span>Liquidity {{ "%.0f%%"|format(m.liquidity_score * 100) }}</span>
+                            <span>{{ "%.0f%%"|format((1 - m.liquidity_score) * 100) }} illiquid</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if m.narrative_energy and m.narrative_energy > 0 %}
+                    <div style="margin-top: 0.3rem;">
+                        <div class="odds-bar">
+                            <div class="odds-fill odds-fill-no" style="width: {{ (m.narrative_energy * 100)|int }}%;"></div>
+                        </div>
+                        <div class="odds-label"><span>Energy {{ "%.0f%%"|format(m.narrative_energy * 100) }}</span></div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {{ sidebar_wild_cards(wild_cards[:5], 0.4) }}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No Polymarket data available.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ═══ Narratives sub-tab ═══ -->
+    <div class="paper-section" id="section-d2-narratives">
+        {% if cheap_expensive %}
+        <div class="two-col-grid">
+            <div>
+                {% for n in cheap_expensive %}
+                <div class="narrative-pair" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4><a href="{{ prefix }}/entry/{{ n.slug }}">{{ n.title[:75] }}</a></h4>
+                    <div class="narrative-sides">
+                        <div class="narrative-side narrative-cheap">
+                            <div class="narrative-cheap-label">Cheap Narrative</div>
+                            {{ n.cheap_narrative[:200] }}
+                        </div>
+                        <div class="narrative-side narrative-expensive">
+                            <div class="narrative-expensive-label">Expensive Narrative</div>
+                            {{ n.expensive_narrative[:200] }}
+                        </div>
+                    </div>
+                    <div class="narrative-liquidity">
+                        Liquidity: {{ "%.0f%%"|format(n.liquidity_score * 100) }}
+                        {% if n.game_type %} &middot; {{ n.game_type }}{% endif %}
+                        {% if n.created %} &middot; {{ n.created[:10] }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {{ sidebar_contradictions(contradictions, 0.3) }}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No competing narrative pairs found in the current window.</p></div>
+        {% endif %}
+    </div>
+
+{% else %}
+    <div class="empty-paper">
+        <p>The crystal ball is clouded. No 48-hour prediction data in the current window.</p>
+        <p style="margin-top: 0.5rem;">Next edition in {{ hours_until }} hours.</p>
+    </div>
+{% endif %}

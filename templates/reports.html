@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}{% if book_mode %}Book Mode{% else %}Reports{% endif %} — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .reports-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .reports-header h1 {
+        font-size: 1rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+    .mode-toggle {
+        display: flex;
+        gap: 0.3rem;
+    }
+    .mode-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        padding: 0.3rem 0.8rem;
+        font-family: inherit;
+        font-size: 0.7rem;
+        cursor: pointer;
+        text-decoration: none;
+        border-radius: 3px;
+    }
+    .mode-btn:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+    .mode-btn.active { background: var(--accent-dim); color: var(--text); border-color: var(--accent-dim); }
+
+    /* Report card */
+    .report-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.8rem;
+        transition: border-color 0.2s;
+    }
+    .report-card:hover { border-color: var(--accent-dim); }
+    .report-card h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.3rem;
+    }
+    .report-card h3 a { color: var(--accent); }
+    .report-meta {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        margin-bottom: 0.5rem;
+    }
+    .report-summary {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Game theory highlight */
+    .game-highlight {
+        background: rgba(255, 170, 0, 0.06);
+        border: 1px solid #3a2a00;
+        border-radius: 4px;
+        padding: 0.5rem 0.8rem;
+        margin-top: 0.5rem;
+    }
+    .game-highlight .game-type {
+        color: #ffaa00;
+        font-size: 0.75rem;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+    }
+    .game-highlight .game-desc {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        margin-top: 0.2rem;
+    }
+    .game-highlight .game-detail {
+        font-size: 0.65rem;
+        color: #b388ff;
+        margin-top: 0.15rem;
+    }
+
+    /* Conspiracy badges */
+    .conspiracy-badge {
+        display: inline-block;
+        background: rgba(200, 255, 0, 0.08);
+        border: 1px solid #1a3a0a;
+        color: var(--accent);
+        padding: 0.1rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.6rem;
+        margin-right: 0.2rem;
+        margin-top: 0.2rem;
+        text-decoration: none;
+    }
+    .conspiracy-badge:hover { background: rgba(200, 255, 0, 0.15); text-decoration: none; }
+
+    /* Stats bar */
+    .stats-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .stat-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+    }
+    .stat-item strong { color: var(--accent); }
+
+    /* Book mode */
+    .book-chapter {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .book-chapter:last-child { border-bottom: none; }
+    .chapter-number {
+        font-size: 0.65rem;
+        color: var(--accent);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 0.3rem;
+    }
+    .chapter-title {
+        font-size: 1.1rem;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+    .chapter-date {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        margin-bottom: 0.8rem;
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+</style>
+
+<div class="reports-header">
+    <h1>{% if book_mode %}BOOK MODE — THE ITERATIVE BOOK{% else %}REPORTS{% endif %}</h1>
+    <div class="mode-toggle">
+        <a href="{{ prefix }}/reports" class="mode-btn {% if not book_mode %}active{% endif %}">List</a>
+        <a href="{{ prefix }}/reports/book" class="mode-btn {% if book_mode %}active{% endif %}">Book</a>
+        <a href="{{ prefix }}/reports/latest" class="mode-btn">Latest</a>
+    </div>
+</div>
+
+{% if not book_mode and game_type_counts %}
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> reports</div>
+    {% for gt, count in game_type_counts.items() %}
+    <div class="stat-item"><strong>{{ count }}</strong> {{ gt }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if book_mode %}
+<div style="text-align:center; margin-bottom:2rem; padding:1.5rem;">
+    <div style="font-size:0.7rem; color:var(--accent); letter-spacing:3px; margin-bottom:0.5rem;">THE ITERATIVE BOOK</div>
+    <div style="font-size:0.85rem; color:var(--text-dim);">A living document. Every 6 hours, the Rabbit Hole Analyst scans the news through a game theory lens and adds a new chapter. This is how conspiracy becomes clarity.</div>
+    <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;">{{ total }} chapters and counting.</div>
+</div>
+{% endif %}
+
+{% if reports %}
+    {% if book_mode %}
+        {% for report in reports %}
+        <div class="book-chapter">
+            <div class="chapter-number">Chapter {{ loop.index }}</div>
+            <div class="chapter-title"><a href="{{ prefix }}/entry/{{ report.slug }}">{{ report.title }}</a></div>
+            <div class="chapter-date">{{ report.created[:16] if report.created else 'unknown' }}</div>
+            {% if report.hitchhiker_summary %}
+            <div class="report-summary">{{ report.hitchhiker_summary }}</div>
+            {% endif %}
+            {% if report.game_theory_highlights %}
+            {% for gt in report.game_theory_highlights %}
+            {% if gt is mapping %}
+            <div class="game-highlight">
+                <div class="game-type">{{ gt.get('game_type', 'Unknown') }}</div>
+                <div class="game-desc">{{ gt.get('description', '') }}</div>
+                {% if gt.get('who_loses') %}
+                <div class="game-detail">Who loses: {{ gt.who_loses }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            {% if report.news_connections %}
+            <div style="margin-top:0.5rem;">
+                {% for conn in report.news_connections %}
+                <span style="font-size:0.65rem; color:var(--text-dim);">{{ conn }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        {% for report in reports %}
+        <div class="report-card">
+            <h3><a href="{{ prefix }}/entry/{{ report.slug }}">{{ report.title }}</a></h3>
+            <div class="report-meta">
+                {{ report.created[:16] if report.created else 'unknown' }}
+                {% if report.tags %} | {{ report.tags | join(', ') }}{% endif %}
+            </div>
+            {% if report.hitchhiker_summary %}
+            <div class="report-summary">{{ report.hitchhiker_summary }}</div>
+            {% endif %}
+            {% if report.game_theory_highlights %}
+            {% for gt in report.game_theory_highlights %}
+            {% if gt is mapping %}
+            <div class="game-highlight">
+                <div class="game-type">{{ gt.get('game_type', 'Unknown') }}: {{ gt.get('description', '') }}</div>
+                {% if gt.get('equilibrium') %}
+                <div class="game-detail">Equilibrium: {{ gt.equilibrium }}</div>
+                {% endif %}
+                {% if gt.get('who_loses') %}
+                <div class="game-detail">Who loses: {{ gt.who_loses }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if total > per_page %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="{{ prefix }}/reports?page={{ page - 1 }}" class="btn" style="font-size:0.7rem;">Previous</a>
+            {% endif %}
+            <span style="font-size:0.7rem; color:var(--text-dim); padding:0.3rem;">
+                Page {{ page }} of {{ (total + per_page - 1) // per_page }}
+            </span>
+            {% if page * per_page < total %}
+            <a href="{{ prefix }}/reports?page={{ page + 1 }}" class="btn" style="font-size:0.7rem;">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No reports yet. The Analyst hasn't filed anything.</p>
+    <p style="margin-top:0.5rem; font-size:0.75rem;">Reports are generated every 6 hours automatically. Check back soon.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}News Feed — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .news-layout { display: grid; grid-template-columns: 1fr 250px; gap: 1.5rem; }
+    .article-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    .article-title {
+        font-size: 0.9rem;
+        color: var(--accent);
+        margin-bottom: 0.3rem;
+    }
+    .article-title a { color: var(--accent); }
+    .article-meta {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        margin-bottom: 0.3rem;
+    }
+    .article-desc {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        line-height: 1.5;
+    }
+    .conspiracy-match {
+        display: inline-block;
+        background: rgba(200, 255, 0, 0.08);
+        border: 1px solid #1a3a0a;
+        color: var(--accent);
+        padding: 0.1rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.65rem;
+        margin-right: 0.2rem;
+        margin-top: 0.3rem;
+        text-decoration: none;
+    }
+    .conspiracy-match:hover { background: rgba(200, 255, 0, 0.15); text-decoration: none; }
+    .filter-sidebar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1rem;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    .filter-sidebar h3 {
+        font-size: 0.75rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+    .filter-item {
+        display: block;
+        padding: 0.2rem 0;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-decoration: none;
+    }
+    .filter-item:hover { color: var(--accent); }
+    .filter-item.active { color: var(--accent); font-weight: bold; }
+    @media (max-width: 768px) {
+        .news-layout { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div style="margin-bottom:1rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1 style="font-size:1rem; color:var(--accent); letter-spacing:1px;">
+            NEWS FEED {% if conspiracy_filter %}— filtered: {{ conspiracy_filter }}{% endif %}
+        </h1>
+        <div>
+            <a href="{{ prefix }}/news/refresh" class="btn" style="font-size:0.7rem;">Refresh</a>
+            <a href="{{ prefix }}/home" class="btn" style="font-size:0.7rem; margin-left:0.3rem;">Home</a>
+        </div>
+    </div>
+</div>
+
+<div class="news-layout">
+    <div>
+        {% if articles %}
+        {% for article in articles %}
+        <div class="article-card">
+            <div class="article-title">
+                {% if article.url %}
+                <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
+                {% else %}
+                {{ article.title }}
+                {% endif %}
+            </div>
+            <div class="article-meta">
+                {% if article.source %}{{ article.source }} — {% endif %}
+                {{ article.fetched_at[:16] if article.fetched_at else 'unknown' }}
+            </div>
+            {% if article.description %}
+            <div class="article-desc">{{ article.description[:200] }}{% if article.description|length > 200 %}...{% endif %}</div>
+            {% endif %}
+            {% if article.matched_conspiracies %}
+            <div style="margin-top:0.4rem;">
+                {% for slug in article.matched_conspiracies %}
+                <a href="{{ prefix }}/entry/{{ slug }}" class="conspiracy-match">{{ slug|replace('-', ' ') }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center; padding:3rem; color:var(--text-dim);">
+            <p>No articles yet. The news machine is warming up.</p>
+            <p style="margin-top:0.5rem;"><a href="{{ prefix }}/news/refresh">Refresh feeds</a></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="filter-sidebar">
+            <h3>FILTER BY TOPIC</h3>
+            <a href="{{ prefix }}/news" class="filter-item {% if not conspiracy_filter %}active{% endif %}">
+                All articles
+            </a>
+            {% for e in conspiracy_entries %}
+            {% if e.slug in matched_slugs %}
+            <a href="{{ prefix }}/news?conspiracy={{ e.slug }}" class="filter-item {% if conspiracy_filter == e.slug %}active{% endif %}">
+                {{ e.title }}
+            </a>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

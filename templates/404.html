@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Not Found — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<div style="text-align:center; padding:4rem 1rem;">
+    <h1 style="font-size:2rem; color:var(--accent); margin-bottom:1rem;">404</h1>
+    <p style="color:var(--text-dim); margin-bottom:1.5rem;">
+        This rabbit hole doesn't exist. Or it did, and someone filled it in. Either way, you can't go down it.
+    </p>
+    {% if slug %}
+    <p style="color:var(--text-dim); font-size:0.8rem; margin-bottom:1rem;">
+        Lost specimen: <code>{{ slug }}</code>
+    </p>
+    {% endif %}
+    <a href="{{ prefix }}/home" class="btn">Back to the Rabbit Hole</a>
+</div>
+{% endblock %}

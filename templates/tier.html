@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Tier {{ tier }}: {{ tier_name }} — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<div style="margin-bottom:1.5rem;">
+    <a href="{{ prefix }}/home" style="font-size:0.75rem; color:var(--text-dim);">&larr; Back to the Rabbit Hole</a>
+</div>
+
+<div style="margin-bottom:1.5rem;">
+    <span class="tier-badge tier-{{ tier }}" style="font-size:0.8rem;">TIER {{ tier }}</span>
+    <h1 style="font-size:1.3rem; color: {{ tier_color }}; margin-top:0.5rem; letter-spacing:1px;">
+        {{ tier_name }}
+    </h1>
+    <p style="font-size:0.8rem; color:var(--text-dim); margin-top:0.5rem; font-style:italic; max-width:600px;">
+        {{ tier_description }}
+    </p>
+    <p style="font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;">
+        {{ entries|length }} entries in this tier
+    </p>
+</div>
+
+{% if entries %}
+{% for entry in entries %}
+<div class="entry-card" style="border-left: 3px solid {{ tier_color }};">
+    <div style="display:flex; justify-content:space-between; align-items:start;">
+        <h3><a href="{{ prefix }}/entry/{{ entry.slug }}">{{ entry.title }}</a></h3>
+        {% if entry.category %}
+        <a href="{{ prefix }}/category/{{ entry.category|lower|replace(' ', '-')|replace('&', 'and') }}" class="tag">{{ entry.category }}</a>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No entries found in this tier. The Guide assures you this is perfectly normal.</p>
+</div>
+{% endif %}
+{% endblock %}

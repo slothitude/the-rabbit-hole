@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}DON'T PANIC — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .donut-panic {
+        font-size: 3rem;
+        letter-spacing: 8px;
+        background: linear-gradient(90deg, #00ff88, #c8ff00, #ffdd00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: none;
+        filter: drop-shadow(0 0 20px rgba(200, 255, 0, 0.3));
+        margin-bottom: 0.3rem;
+    }
+    .question-everything {
+        font-size: 0.85rem;
+        color: #00ff88;
+        letter-spacing: 4px;
+        margin-top: 0.2rem;
+        opacity: 0.8;
+    }
+    .guide-intro {
+        max-width: 600px;
+        margin: 0 auto 2rem;
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        line-height: 1.7;
+    }
+
+    /* Dashboard grid */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .dashboard-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    .dashboard-panel.full-width {
+        grid-column: 1 / -1;
+    }
+    .panel-title {
+        font-size: 0.7rem;
+        color: var(--accent);
+        letter-spacing: 1.5px;
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .panel-title a { color: var(--accent); }
+    .panel-title a:hover { text-decoration: underline; }
+
+    /* Energy feed */
+    .energy-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.75rem;
+    }
+    .energy-item:last-child { border-bottom: none; }
+    .energy-item a { color: var(--text); font-size: 0.75rem; }
+    .energy-item a:hover { color: var(--accent); }
+    .energy-pct {
+        font-weight: bold;
+        font-size: 0.7rem;
+        min-width: 40px;
+        text-align: right;
+    }
+    .energy-bar-mini {
+        width: 60px; height: 4px; background: var(--bg);
+        border: 1px solid var(--border); border-radius: 2px; margin-left: 0.3rem;
+    }
+    .energy-bar-fill { height: 100%; border-radius: 1px; }
+
+    /* Pressure field mini */
+    .pressure-mini {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.3rem;
+        font-size: 0.65rem;
+        margin-bottom: 0.5rem;
+        padding: 0.4rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .pressure-mini:last-child { border-bottom: none; }
+    .pressure-mini a { color: var(--text); font-size: 0.7rem; }
+    .pressure-mini a:hover { color: var(--accent); }
+    .p-label { color: #ff8c00; font-size: 0.55rem; }
+    .s-label { color: #00e676; font-size: 0.55rem; }
+
+    /* Contradiction radar */
+    .contra-item {
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.7rem;
+    }
+    .contra-item:last-child { border-bottom: none; }
+    .contra-sig {
+        display: inline-block;
+        padding: 0.05rem 0.3rem;
+        border-radius: 2px;
+        font-size: 0.55rem;
+        font-weight: bold;
+        margin-right: 0.2rem;
+    }
+    .sig-high { background: rgba(255,51,51,0.15); color: #ff3333; }
+    .sig-medium { background: rgba(255,140,0,0.15); color: #ff8c00; }
+    .sig-low { background: rgba(0,230,118,0.15); color: #00e676; }
+
+    /* Liquidity mini */
+    .liq-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.3rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.7rem;
+    }
+    .liq-item:last-child { border-bottom: none; }
+    .liq-item a { color: var(--text); font-size: 0.7rem; }
+    .liq-item a:hover { color: var(--accent); }
+
+    /* Game theater */
+    .game-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.7rem;
+    }
+    .game-row:last-child { border-bottom: none; }
+    .game-name { color: #ffaa00; }
+    .game-count { color: var(--text-dim); font-size: 0.65rem; }
+
+    /* Half-life mini */
+    .hl-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.3rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.7rem;
+    }
+    .hl-item:last-child { border-bottom: none; }
+    .hl-item a { color: var(--text); font-size: 0.7rem; }
+    .hl-item a:hover { color: var(--accent); }
+    .hl-badge {
+        display: inline-block;
+        padding: 0.1rem 0.3rem;
+        border-radius: 2px;
+        font-size: 0.55rem;
+        font-weight: bold;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        margin: 1.5rem 0;
+        flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-number {
+        font-size: 1.3rem;
+        background: linear-gradient(90deg, #00ff88, #c8ff00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+    }
+    .stat-label {
+        font-size: 0.6rem;
+        color: var(--text-dim);
+        letter-spacing: 1px;
+    }
+    .stat a { text-decoration: none; }
+
+    /* Empty state */
+    .empty-panel {
+        color: var(--text-dim);
+        font-size: 0.7rem;
+        text-align: center;
+        padding: 1rem;
+        font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div style="text-align:center; margin-bottom:1.5rem;">
+    <div class="donut-panic">DON'T PANIC</div>
+    <div class="question-everything">NARRATIVE OPERATING SYSTEM v2.0</div>
+</div>
+
+<div class="stats-bar">
+    <div class="stat">
+        <div class="stat-number">{{ total }}</div>
+        <div class="stat-label">RABBIT HOLES</div>
+    </div>
+    <div class="stat">
+        <a href="{{ prefix }}/articles" style="text-decoration:none;">
+            <div class="stat-number">{{ total_articles }}</div>
+            <div class="stat-label">ARTICLES</div>
+        </a>
+    </div>
+    <div class="stat">
+        <a href="{{ prefix }}/map" style="text-decoration:none;">
+            <div class="stat-number">MAP</div>
+            <div class="stat-label">VIEW GRAPH</div>
+        </a>
+    </div>
+    <div class="stat">
+        <a href="{{ prefix }}/energy" style="text-decoration:none;">
+            <div class="stat-number">ENERGY</div>
+            <div class="stat-label">FIELD</div>
+        </a>
+    </div>
+</div>
+
+{# --- Narrative OS Dashboard --- #}
+{% if total_articles > 0 %}
+<div class="dashboard-grid">
+
+    {# Active Narrative Pressure Field #}
+    <div class="dashboard-panel">
+        <div class="panel-title"><a href="{{ prefix }}/forecast">ACTIVE PRESSURE FIELD</a></div>
+        {% if pressure_field %}
+            {% for art in pressure_field %}
+            {% set ps = art.pressure_score or 0 %}
+            {% set ss = art.stabilization_score or 0 %}
+            <div class="pressure-mini">
+                <div style="grid-column: 1 / -1;">
+                    <a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title[:60] }}{% if art.title|length > 60 %}...{% endif %}</a>
+                </div>
+                <div>
+                    <div class="p-label">PRESSURE {{ "%.0f"|format(ps * 10) }}/10</div>
+                    <div style="background:var(--bg); border-radius:2px; height:4px; margin-top:2px;">
+                        <div style="height:100%; border-radius:2px; background:#ff8c00; width:{{ ps * 10 }}%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="s-label">STABILIZATION {{ "%.0f"|format(ss * 10) }}/10</div>
+                    <div style="background:var(--bg); border-radius:2px; height:4px; margin-top:2px;">
+                        <div style="height:100%; border-radius:2px; background:#00e676; width:{{ ss * 10 }}%;"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-panel">No pressure field data yet. Run the reporter.</div>
+        {% endif %}
+    </div>
+
+    {# Narrative Energy Feed #}
+    <div class="dashboard-panel">
+        <div class="panel-title"><a href="{{ prefix }}/energy">NARRATIVE ENERGY FEED</a></div>
+        {% if high_energy %}
+            {% for art in high_energy %}
+            {% set e = art.narrative_energy or 0 %}
+            <div class="energy-item">
+                <a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title[:50] }}{% if art.title|length > 50 %}...{% endif %}</a>
+                <div style="display:flex; align-items:center;">
+                    <div class="energy-bar-mini"><div class="energy-bar-fill" style="width:{{ e * 100 }}%; background:{% if e >= 0.8 %}#ff3333{% elif e >= 0.6 %}#ff8c00{% else %}#ffd500{% endif %};"></div></div>
+                    <span class="energy-pct" style="color:{% if e >= 0.8 %}#ff3333{% elif e >= 0.6 %}#ff8c00{% else %}#ffd500{% endif %};">{{ "%.0f"|format(e * 100) }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-panel">No energy data yet. Run the reporter.</div>
+        {% endif %}
+    </div>
+
+    {# Expiring Narratives #}
+    <div class="dashboard-panel">
+        <div class="panel-title"><a href="{{ prefix }}/persistence">EXPIRING NARRATIVES</a></div>
+        {% if expiring %}
+            {% for art in expiring %}
+            {% set hl = art.half_life or '?' %}
+            <div class="hl-item">
+                <a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title[:45] }}{% if art.title|length > 45 %}...{% endif %}</a>
+                <span class="hl-badge" style="background:rgba(255,51,51,0.1); color:#ff3333; border:1px solid #4d1a1a;">{{ hl }}</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-panel">No half-life data yet.</div>
+        {% endif %}
+    </div>
+
+    {# Liquidity Heat Map #}
+    <div class="dashboard-panel">
+        <div class="panel-title"><a href="{{ prefix }}/persistence">LIQUIDITY HEAT MAP</a></div>
+        {% if liquid %}
+            {% for art in liquid %}
+            <div class="liq-item">
+                <a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title[:45] }}{% if art.title|length > 45 %}...{% endif %}</a>
+                <span style="color:{% if art.liquidity_score >= 0.7 %}#00e676{% elif art.liquidity_score >= 0.4 %}#ffd500{% else %}#ff8c00{% endif %}; font-weight:bold; font-size:0.7rem;">
+                    {{ "%.0f"|format((art.liquidity_score or 0) * 100) }}%
+                </span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-panel">No liquidity data yet.</div>
+        {% endif %}
+    </div>
+
+    {# Contradiction Radar #}
+    <div class="dashboard-panel">
+        <div class="panel-title"><a href="{{ prefix }}/contradictions">CONTRADICTION RADAR</a></div>
+        {% if contradictions %}
+            {% for c in contradictions %}
+            <div class="contra-item">
+                <span class="contra-sig {% if c.significance == 'high' %}sig-high{% elif c.significance == 'medium' %}sig-medium{% else %}sig-low{% endif %}">
+                    {{ c.significance }}
+                </span>
+                <a href="{{ prefix }}/entry/{{ c.slug }}">{{ c.claim_now[:60] }}{% if c.claim_now|length > 60 %}...{% endif %}</a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-panel">No contradictions detected yet.</div>
+        {% endif %}
+    </div>
+
+    {# Game Theory Theater #}
+    <div class="dashboard-panel">
+        <div class="panel-title">GAME THEORY THEATER</div>
+        {% if game_dist %}
+            {% for g in game_dist %}
+            <div class="game-row">
+                <span class="game-name">{{ g.game_type }}</span>
+                <span class="game-count">{{ g.cnt }} articles</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-panel">No game type data yet.</div>
+        {% endif %}
+    </div>
+
+</div>
+{% endif %}
+
+{# --- Traditional tier view --- #}
+{% for tier_num in range(5, 0, -1) %}
+{% if category_map[tier_num] %}
+<div style="margin-bottom:2rem; padding:1.2rem; background:linear-gradient(135deg, var(--surface) 0%, rgba(13,17,30,0.8) 100%); border-radius:8px; border-left:4px solid {{ tier_colors[tier_num] }};">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+        <span style="font-size:1rem; letter-spacing:1px;">
+            <span class="tier-badge tier-{{ tier_num }}">TIER {{ tier_num }}</span>
+            <a href="{{ prefix }}/tier/{{ tier_num }}" style="color: {{ tier_colors[tier_num] }};">
+                {{ tier_names[tier_num] }}
+            </a>
+        </span>
+        <span style="font-size:0.7rem; color:var(--text-dim);">{{ tier_counts.get(tier_num, 0) }} entries</span>
+    </div>
+    <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.8rem; font-style:italic;">{{ tier_descriptions[tier_num] }}</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.5rem;">
+        {% for e in category_map[tier_num] %}
+        <a href="{{ prefix }}/entry/{{ e.slug }}" style="display:inline-block; padding:0.3rem 0.6rem; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:0.75rem; color:var(--accent); text-decoration:none;">{{ e.title }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<div style="text-align:center; margin-top:2rem;">
+    <p style="font-size:0.7rem; color:var(--text-dim); font-style:italic;">
+        "{{ quote }}"
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Tomorrow's Paper{% endblock %}
+
+{% block content %}
+{% include "paper/_css.html" %}
+{% from "paper/_macros.html" import newspaper_layout, sidebar_track_record, sidebar_contradictions, sidebar_expiring, sidebar_game_theater, sidebar_wild_cards %}
+
+<div class="paper-wrap newspaper-page">
+    <!-- ═══ Masthead ═══ -->
+    <div class="masthead">
+        <div class="masthead-title">
+            The Rabbit Hole
+            <span id="mode-badge" class="mode-indicator mode-forecast">24H FORECAST</span>
+        </div>
+        <div class="masthead-date">
+            {{ today_date.strftime('%A, %B %d, %Y') }}
+            &mdash; Edition {{ edition }}
+        </div>
+        <div class="masthead-tagline" id="masthead-tagline">"What happens next"</div>
+        <div class="masthead-rules" id="masthead-rules">
+            <span>Lead</span>
+            <span>Predict</span>
+            <span>Conflict</span>
+            <span>Track</span>
+        </div>
+    </div>
+
+    <!-- ═══ Top-level tabs ═══ -->
+    <div class="top-tab-bar">
+        <button class="top-tab-btn" data-top="today">Today<span class="top-tab-count">({{ today_total }})</span></button>
+        <button class="top-tab-btn active" data-top="tomorrow">Tomorrow<span class="top-tab-count">({{ tomorrow_total }})</span></button>
+        <button class="top-tab-btn" data-top="day2">Day+2<span class="top-tab-count">({{ dayafter_total }})</span></button>
+        <button class="top-tab-btn" data-top="future">Future<span class="top-tab-count">({{ future_total }})</span></button>
+    </div>
+
+    <!-- ═══ TODAY section ═══ -->
+    <div class="top-section" id="top-today">
+        {% include "paper/_today.html" %}
+    </div>
+
+    <!-- ═══ TOMORROW section ═══ -->
+    <div class="top-section active" id="top-tomorrow">
+        {% include "paper/_tomorrow.html" %}
+    </div>
+
+    <!-- ═══ DAY+2 section ═══ -->
+    <div class="top-section" id="top-day2">
+        {% include "paper/_day2.html" %}
+    </div>
+
+    <!-- ═══ FUTURE section ═══ -->
+    <div class="top-section" id="top-future">
+        {% include "paper/_future.html" %}
+    </div>
+
+    <!-- ═══ Footer ═══ -->
+    <div class="paper-footer" style="animation-delay: {{ 5.0 if today_articles else 2.5 }}s;">
+        Edition {{ edition }} &middot;
+        <span class="next-edition">Next edition in ~{{ hours_until }}h</span> &middot;
+        Today {{ today_total }} &middot; Tomorrow {{ tomorrow_total }} &middot; Day+2 {{ dayafter_total }} &middot; Future {{ future_total }}
+    </div>
+</div>
+
+<script>
+(function() {
+    var modeConfig = {
+        today:    { badge: 'LIVE',      cls: 'mode-live',     tagline: '"What\'s happening now"', rules: ['Lead','Breaking','Conflict','Viral'] },
+        tomorrow: { badge: '24H FORECAST', cls: 'mode-forecast', tagline: '"What happens next"',  rules: ['Lead','Predict','Conflict','Track'] },
+        day2:     { badge: '48H FORECAST', cls: 'mode-48h',     tagline: '"What WILL happen in 48 hours"', rules: ['Predict','Escalate','Disrupt','Resolve'] },
+        future:   { badge: '72H+',      cls: 'mode-72h',      tagline: '"What will survive the next 72 hours to 6 months"', rules: ['Persist','Shift','Endure','Myth'] }
+    };
+
+    var topBtns = document.querySelectorAll('.top-tab-btn');
+    var topSections = document.querySelectorAll('.top-section');
+    var modeBadge = document.getElementById('mode-badge');
+    var tagline = document.getElementById('masthead-tagline');
+    var rulesEl = document.getElementById('masthead-rules');
+
+    // Top-level tab switching
+    topBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var target = btn.dataset.top;
+            // Deactivate all top tabs/sections
+            topBtns.forEach(function(b) { b.classList.remove('active'); });
+            topSections.forEach(function(s) { s.classList.remove('active'); });
+            // Activate target
+            btn.classList.add('active');
+            var sec = document.getElementById('top-' + target);
+            if (sec) {
+                sec.classList.add('active');
+                // Re-trigger animations
+                sec.querySelectorAll('.lead-story, .story-card, .paper-sidebar, .contra-item, .expire-item, .track-row, .pressure-row, .market-card, .narrative-pair, .phase-card, .halflife-row, .myth-card, .wildcard-item, .game-theater-row').forEach(function(el) {
+                    el.style.animation = 'none';
+                    el.offsetHeight;
+                    el.style.animation = '';
+                });
+            }
+            // Update mode badge
+            var cfg = modeConfig[target];
+            if (cfg && modeBadge) {
+                modeBadge.textContent = cfg.badge;
+                modeBadge.className = 'mode-indicator ' + cfg.cls;
+            }
+            if (cfg && tagline) tagline.textContent = cfg.tagline;
+            if (cfg && rulesEl) {
+                rulesEl.innerHTML = cfg.rules.map(function(r) { return '<span>' + r + '</span>'; }).join('');
+            }
+        });
+    });
+
+    // Sub-tab switching (within each section)
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.tab-btn');
+        if (!btn) return;
+        var topId = btn.dataset.top;
+        if (!topId) return;
+        var container = document.getElementById('top-' + topId);
+        if (!container) return;
+        var subTabs = container.querySelectorAll('.tab-btn');
+        var subSections = container.querySelectorAll('.paper-section');
+        subTabs.forEach(function(t) { t.classList.remove('active'); });
+        subSections.forEach(function(s) { s.classList.remove('active'); });
+        btn.classList.add('active');
+        var target = document.getElementById('section-' + btn.dataset.section);
+        if (target) {
+            target.classList.add('active');
+            target.querySelectorAll('.lead-story, .story-card, .paper-sidebar, .contra-item, .expire-item, .track-row, .pressure-row, .market-card, .narrative-pair, .phase-card, .halflife-row, .myth-card, .wildcard-item, .game-theater-row').forEach(function(el) {
+                el.style.animation = 'none';
+                el.offsetHeight;
+                el.style.animation = '';
+            });
+        }
+    });
+
+    // Activate initial tab from query param
+    var params = new URLSearchParams(window.location.search);
+    var initialTab = params.get('tab');
+    if (initialTab && modeConfig[initialTab]) {
+        var btn = document.querySelector('.top-tab-btn[data-top="' + initialTab + '"]');
+        if (btn) btn.click();
+    }
+})();
+</script>
+{% endblock %}

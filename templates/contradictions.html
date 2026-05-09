@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Contradictions — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .contradictions-header {
+        margin-bottom: 1rem;
+    }
+    .contradictions-header h1 {
+        font-size: 1rem;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+    .stats-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+    .stat-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+    }
+    .stat-item strong { color: var(--accent); }
+    .contradiction-pair {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    .pair-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .pair-header a {
+        font-size: 0.85rem;
+        color: var(--accent);
+    }
+    .severity-badge {
+        padding: 0.15rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.6rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .severity-high { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid #4d1a1a; }
+    .severity-medium { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid #4d3a1a; }
+    .severity-low { background: rgba(88,166,255,0.1); color: #58a6ff; border: 1px solid #1a3a4d; }
+    .pair-body {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0;
+    }
+    .claim-cell {
+        padding: 0.8rem 1rem;
+    }
+    .claim-label {
+        font-size: 0.6rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.3rem;
+    }
+    .claim-text {
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+    .vs-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        padding: 0 0.5rem;
+        color: var(--text-dim);
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+    .pair-explanation {
+        padding: 0.6rem 1rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        font-style: italic;
+    }
+</style>
+
+<div class="contradictions-header">
+    <h1>CONTRADICTION MAP</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> contradictions detected</div>
+</div>
+
+{% if pairs %}
+    {% for pair in pairs %}
+    <div class="contradiction-pair">
+        <div class="pair-header">
+            <a href="{{ prefix }}/entry/{{ pair.article_slug }}">{{ pair.article_title }}</a>
+            <span class="severity-badge severity-{{ pair.significance }}">{{ pair.significance }}</span>
+        </div>
+        <div class="pair-body">
+            <div class="claim-cell">
+                <div class="claim-label">Now</div>
+                <div class="claim-text">{{ pair.claim_now }}</div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="claim-cell">
+                <div class="claim-label">Then</div>
+                <div class="claim-text">{{ pair.claim_then or '(earlier claim)' }}</div>
+            </div>
+        </div>
+        {% if pair.explanation %}
+        <div class="pair-explanation">{{ pair.explanation }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No contradictions detected yet. Contradictions are identified when claims clash across reports.</p>
+    <p style="margin-top:0.5rem; font-size:0.75rem;">The analytical layers will populate this as more reports are generated.</p>
+</div>
+{% endif %}
+{% endblock %}

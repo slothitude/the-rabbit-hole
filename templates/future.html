@@ -1,0 +1,1099 @@
+{% extends "base.html" %}
+{% block title %}Future{% endblock %}
+
+{% block content %}
+<style>
+    .paper-wrap {
+        max-width: 100%;
+        font-family: Georgia, 'Times New Roman', 'Noto Serif', serif;
+        overflow: hidden;
+    }
+
+    /* ── Masthead ── */
+    .masthead {
+        text-align: center;
+        border-bottom: 3px double var(--accent-dim);
+        padding-bottom: 1.2rem;
+        margin-bottom: 1.5rem;
+    }
+    .masthead-title {
+        font-size: 2.6rem;
+        font-weight: 900;
+        letter-spacing: 8px;
+        color: #d4a017;
+        text-transform: uppercase;
+        line-height: 1.1;
+        opacity: 0;
+        animation: titleReveal 0.8s ease-out 0.1s forwards;
+    }
+    @keyframes titleReveal {
+        0% { opacity: 0; letter-spacing: 20px; filter: blur(8px); }
+        60% { filter: blur(0); }
+        100% { opacity: 1; letter-spacing: 8px; }
+    }
+    .masthead-date {
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        letter-spacing: 3px;
+        margin-top: 0.3rem;
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out 0.6s forwards;
+    }
+    .date-range {
+        color: #d4a017;
+        font-weight: bold;
+        opacity: 0;
+        animation: fadeSlideRight 0.5s ease-out 2.0s forwards;
+    }
+    .date-arrow {
+        display: inline-block;
+        margin: 0 0.4rem;
+        color: #d4a017;
+        opacity: 0;
+        animation: fadeSlideRight 0.4s ease-out 1.8s forwards;
+    }
+    @keyframes fadeSlideRight {
+        0% { opacity: 0; transform: translateX(-8px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    .masthead-tagline {
+        font-size: 0.75rem;
+        color: var(--accent-dim);
+        font-style: italic;
+        margin-top: 0.2rem;
+        opacity: 0;
+        animation: fadeIn 0.6s ease-out 0.9s forwards;
+    }
+    .masthead-rules {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 0.8rem;
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        border-top: 1px solid var(--border);
+        padding-top: 0.6rem;
+    }
+    .masthead-rules span {
+        position: relative;
+        opacity: 0;
+        animation: ruleDrop 0.4s ease-out forwards;
+    }
+    .masthead-rules span:nth-child(1) { animation-delay: 2.3s; color: #d4a017; }
+    .masthead-rules span:nth-child(2) { animation-delay: 2.45s; color: #ff3333; }
+    .masthead-rules span:nth-child(3) { animation-delay: 2.6s; color: #3fb950; }
+    .masthead-rules span:nth-child(4) { animation-delay: 2.75s; color: #b388ff; }
+    .masthead-rules span::before { content: "\2014"; margin-right: 0.3rem; }
+    @keyframes ruleDrop {
+        0% { opacity: 0; transform: translateY(-8px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 1.5rem;
+        font-family: Georgia, 'Times New Roman', serif;
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out 2.9s forwards;
+    }
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        cursor: pointer;
+        position: relative;
+        transition: color 0.2s;
+        font-family: inherit;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: #d4a017; }
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #d4a017;
+    }
+    .tab-count {
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        margin-left: 0.3rem;
+        font-weight: normal;
+    }
+    .tab-btn.active .tab-count { color: rgba(212,160,23,0.6); }
+
+    /* ── Sections ── */
+    .paper-section { display: none; }
+    .paper-section.active { display: block; }
+
+    /* ── Animations ── */
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    @keyframes slideUp {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInRight {
+        0% { opacity: 0; transform: translateX(30px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes growWidth { 0% { width: 0%; } }
+    @keyframes scaleIn {
+        0% { opacity: 0; transform: scale(0.5); }
+        70% { transform: scale(1.1); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Lead story ── */
+    .lead-story {
+        border: 1px solid var(--border);
+        border-left: 4px solid #d4a017;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, rgba(212,160,23,0.05) 0%, transparent 60%);
+        opacity: 0;
+        animation: slideUp 0.7s ease-out 3.0s forwards;
+    }
+    .lead-story.is-prediction {
+        border-left-color: #d4a017;
+    }
+    .lead-headline {
+        font-size: 1.8rem;
+        font-weight: 900;
+        line-height: 1.2;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+    }
+    .lead-headline a { color: var(--text); }
+    .lead-headline a:hover { color: #d4a017; text-decoration: none; }
+    .lead-deck {
+        font-size: 0.95rem;
+        color: var(--text-dim);
+        font-style: italic;
+        margin-bottom: 0.8rem;
+        line-height: 1.5;
+    }
+    .lead-meta {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        margin-bottom: 0.6rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+    .lead-byline { color: #d4a017; font-weight: bold; }
+    .lead-forecast {
+        background: var(--bg);
+        border: 1px dashed var(--border);
+        padding: 0.8rem 1rem;
+        margin-top: 0.8rem;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: var(--text-dim);
+        border-radius: 4px;
+    }
+    .lead-forecast strong { color: #d4a017; }
+    .lead-meters {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    /* ── Meters ── */
+    .meter {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        color: var(--text-dim);
+    }
+    .meter-bar {
+        width: 60px;
+        height: 8px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .meter-fill {
+        height: 100%;
+        border-radius: 3px;
+        animation: growWidth 1s ease-out 3.2s both;
+    }
+    .meter-future .meter-fill { background: linear-gradient(90deg, #d4a017, #ff8c00); }
+    .meter-energy .meter-fill { background: linear-gradient(90deg, #ffd500, #ff3333); }
+    .meter-elite .meter-fill { background: linear-gradient(90deg, #d4a017, #b388ff); }
+    .meter-meme .meter-fill { background: linear-gradient(90deg, #58a6ff, #d4a017); }
+
+    /* ── Badges ── */
+    .badge-prediction {
+        display: inline-block;
+        background: #d4a017;
+        color: #000;
+        padding: 0.15rem 0.6rem;
+        font-size: 0.65rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-radius: 2px;
+        margin-right: 0.5rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+    .badge-phase {
+        display: inline-block;
+        padding: 0.15rem 0.6rem;
+        font-size: 0.65rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-radius: 2px;
+        margin-right: 0.5rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        border: 1px solid;
+    }
+    .badge-phase-high { color: #ff3333; border-color: #ff3333; background: rgba(255,51,51,0.1); }
+    .badge-phase-medium { color: #d29922; border-color: #d29922; background: rgba(210,153,34,0.1); }
+    .badge-phase-low { color: #58a6ff; border-color: #58a6ff; background: rgba(88,166,255,0.1); }
+    .badge-shift {
+        display: inline-block;
+        background: rgba(212,160,23,0.15);
+        color: #d4a017;
+        padding: 0.1rem 0.5rem;
+        font-size: 0.6rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        border-radius: 2px;
+        margin-right: 0.3rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+    .accuracy-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.65rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        padding: 0.1rem 0.5rem;
+        border-radius: 3px;
+        margin-left: 0.4rem;
+    }
+    .accuracy-high { color: #3fb950; background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); }
+    .accuracy-mid { color: #d29922; background: rgba(210, 153, 34, 0.1); border: 1px solid rgba(210, 153, 34, 0.3); }
+    .accuracy-low { color: #ff3333; background: rgba(255, 51, 51, 0.1); border: 1px solid rgba(255, 51, 51, 0.3); }
+    .mode-indicator {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        padding: 0.15rem 0.6rem;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+    }
+    .mode-prediction {
+        color: #d4a017;
+        border: 1px solid rgba(212, 160, 23, 0.4);
+        background: rgba(212, 160, 23, 0.08);
+    }
+    .mode-live {
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        background: transparent;
+    }
+    .source-link {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        font-style: italic;
+    }
+    .source-link a { color: #d4a017; }
+    .source-link a:hover { color: var(--accent); }
+
+    /* ── Rank ── */
+    .importance-rank {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #d4a017;
+        color: #000;
+        font-size: 0.7rem;
+        font-weight: bold;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        margin-right: 0.4rem;
+    }
+
+    /* ── Grids ── */
+    .below-fold {
+        display: grid;
+        grid-template-columns: 1fr 1fr 300px;
+        gap: 1.2rem;
+    }
+    .two-col-grid {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 1.2rem;
+    }
+    .story-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .story-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1rem 1.2rem;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        opacity: 0;
+        animation: slideUp 0.5s ease-out forwards;
+    }
+    .story-card:hover {
+        border-color: #d4a017;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .story-card.is-prediction {
+        border-left: 3px solid #d4a017;
+    }
+    .story-card h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.3;
+        margin-bottom: 0.3rem;
+    }
+    .story-card h3 a { color: var(--text); }
+    .story-card h3 a:hover { color: #d4a017; text-decoration: none; }
+    .story-deck {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        font-style: italic;
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
+    }
+    .story-meta {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+
+    /* ── Phase shift cards ── */
+    .phase-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid #ff3333;
+        border-radius: 4px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.6rem;
+        opacity: 0;
+        animation: slideUp 0.5s ease-out forwards;
+    }
+    .phase-card.shift-moderate { border-left-color: #d29922; }
+    .phase-card.shift-none { border-left-color: #58a6ff; }
+    .phase-card h4 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+    .phase-card h4 a { color: var(--text); }
+    .phase-card h4 a:hover { color: #d4a017; text-decoration: none; }
+    .phase-meta {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+
+    /* ── Half-life cards ── */
+    .halflife-row {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.6rem 1rem;
+        margin-bottom: 0.5rem;
+        opacity: 0;
+        animation: slideUp 0.5s ease-out forwards;
+    }
+    .halflife-rank {
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        min-width: 20px;
+    }
+    .halflife-title {
+        flex: 1;
+        font-size: 0.85rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .halflife-title a { color: var(--text); }
+    .halflife-title a:hover { color: #d4a017; text-decoration: none; }
+    .halflife-value {
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        font-size: 0.75rem;
+        color: #d4a017;
+        font-weight: bold;
+        min-width: 40px;
+        text-align: right;
+    }
+    .halflife-bar-track {
+        width: 80px;
+        height: 6px;
+        background: var(--bg);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .halflife-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #d4a017, #ff8c00);
+        border-radius: 3px;
+        animation: growWidth 0.8s ease-out forwards;
+    }
+
+    /* ── Mythology cards ── */
+    .myth-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.6rem;
+        opacity: 0;
+        animation: slideUp 0.5s ease-out forwards;
+    }
+    .myth-card h4 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+    .myth-card h4 a { color: var(--text); }
+    .myth-card h4 a:hover { color: #d4a017; text-decoration: none; }
+    .myth-archetype {
+        display: inline-block;
+        background: rgba(179,136,255,0.15);
+        color: #b388ff;
+        padding: 0.1rem 0.5rem;
+        font-size: 0.65rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        border-radius: 2px;
+        margin-right: 0.3rem;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+    .myth-detail {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        margin-top: 0.3rem;
+        line-height: 1.4;
+    }
+    .myth-detail strong { color: #b388ff; }
+
+    /* ── Sidebar ── */
+    .sidebar-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .paper-sidebar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1rem;
+        opacity: 0;
+        animation: slideInRight 0.6s ease-out forwards;
+    }
+    .paper-sidebar h4 {
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #d4a017;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.4rem;
+        margin-bottom: 0.6rem;
+    }
+    .game-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.4rem;
+    }
+    .game-bar-label {
+        width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--text-dim);
+    }
+    .game-bar-track {
+        flex: 1;
+        height: 6px;
+        background: var(--bg);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .game-bar-fill {
+        height: 100%;
+        background: #d4a017;
+        border-radius: 3px;
+        animation: growWidth 0.8s ease-out forwards;
+    }
+    .game-bar-count {
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        min-width: 24px;
+        text-align: right;
+    }
+    .game-theater-row {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.75rem;
+        opacity: 0;
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    .game-theater-row:last-child { border-bottom: none; }
+    .game-theater-eq {
+        font-size: 0.68rem;
+        color: #d4a017;
+        font-style: italic;
+    }
+    .wildcard-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.78rem;
+        opacity: 0;
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    .wildcard-item:last-child { border-bottom: none; }
+    .expire-item {
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.78rem;
+        opacity: 0;
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    .expire-item:last-child { border-bottom: none; }
+    .expire-half-life {
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        font-size: 0.7rem;
+        color: #d4a017;
+        font-weight: bold;
+    }
+    .contra-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.78rem;
+        opacity: 0;
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    .contra-item:last-child { border-bottom: none; }
+    .contra-claim { color: var(--text-dim); font-size: 0.72rem; }
+    .contra-claim em { color: var(--text); font-style: normal; }
+    .contra-sev-high { color: #ff3333; }
+    .contra-sev-medium { color: #d29922; }
+    .contra-sev-low { color: #58a6ff; }
+
+    /* ── Footer ── */
+    .paper-footer {
+        border-top: 3px double var(--border);
+        margin-top: 2rem;
+        padding-top: 1rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        opacity: 0;
+        animation: slideUp 0.5s ease-out forwards;
+    }
+    .paper-footer .next-edition { color: #d4a017; font-weight: bold; }
+    .paper-footer .phase-count { color: #ff3333; font-weight: bold; }
+
+    /* ── Empty ── */
+    .empty-paper {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-dim);
+        font-style: italic;
+        opacity: 0;
+        animation: fadeIn 1s ease-out 2s forwards;
+    }
+
+    @media (max-width: 768px) {
+        .below-fold, .two-col-grid { grid-template-columns: 1fr; }
+        .masthead-title { font-size: 1.6rem; letter-spacing: 3px; }
+        .lead-headline { font-size: 1.3rem; }
+        .tab-btn { padding: 0.4rem 0.7rem; font-size: 0.7rem; letter-spacing: 1px; }
+    }
+</style>
+
+<div class="paper-wrap newspaper-page np-gold">
+    <!-- Masthead -->
+    <div class="masthead">
+        <div class="masthead-title">
+            The Rabbit Hole
+            <span class="mode-indicator {{ 'mode-prediction' if has_predictions else 'mode-live' }}">
+                {{ 'FORECAST' if has_predictions else 'LIVE' }}
+            </span>
+        </div>
+        <div class="masthead-date">
+            <span style="opacity: 0; animation: fadeIn 0.5s ease-out 0.6s forwards;">{{ today_date.strftime('%A, %B %d, %Y') }}</span>
+            <span class="date-arrow">&rarr;</span>
+            <span class="date-range">{{ future_date.strftime('%b %d') }} &mdash; {{ six_months.strftime('%b %d, %Y') }}</span>
+            &mdash; Edition {{ edition }}
+        </div>
+        <div class="masthead-tagline">"What will survive the next 72 hours to 6 months"</div>
+        <div class="masthead-rules">
+            <span>Persist</span>
+            <span>Shift</span>
+            <span>Endure</span>
+            <span>Myth</span>
+        </div>
+    </div>
+
+    {% if predictions %}
+    <!-- Tab bar -->
+    <div class="tab-bar">
+        <button class="tab-btn active" data-section="forecasts">Forecasts<span class="tab-count">({{ predictions|length }})</span></button>
+        <button class="tab-btn" data-section="shifts">Phase Shifts<span class="tab-count">({{ phase_shifts|length }})</span></button>
+        <button class="tab-btn" data-section="persistence">Persistence<span class="tab-count">({{ half_lives|length }})</span></button>
+        <button class="tab-btn" data-section="mythology">Mythology<span class="tab-count">({{ mythology|length }})</span></button>
+    </div>
+
+    <!-- ═══════════ FORECASTS TAB ═══════════ -->
+    <div class="paper-section active" id="section-forecasts">
+        {% set lead = predictions[0] %}
+        <div class="lead-story {{ 'is-prediction' if lead.get('is_prediction') }}">
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap;">
+                {% if lead.get('is_prediction') %}
+                    <span class="badge-prediction">Prediction</span>
+                    {% if lead.scored %}
+                        {% if lead.accuracy_score >= 0.7 %}
+                            <span class="accuracy-badge accuracy-high">&#10003; {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% elif lead.accuracy_score >= 0.4 %}
+                            <span class="accuracy-badge accuracy-mid">~ {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% else %}
+                            <span class="accuracy-badge accuracy-low">&#10007; {{ "%.0f%%"|format(lead.accuracy_score * 100) }}</span>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    {% if lead.phase_shift_risk == 'high' %}
+                        <span class="badge-phase badge-phase-high">Phase Shift</span>
+                    {% endif %}
+                    {% if lead.equilibrium_shift and lead.equilibrium_shift != 'none' %}
+                        <span class="badge-shift">Eq: {{ lead.equilibrium_shift }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="lead-headline">
+                {% if lead.get('is_prediction') %}
+                    {{ lead.title }}
+                {% else %}
+                    <a href="{{ prefix }}/entry/{{ lead.slug }}">{{ lead.title }}</a>
+                {% endif %}
+            </div>
+            {% if lead.get('is_prediction') and lead.source_title %}
+                <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ lead.source_slug }}">{{ lead.source_title }}</a></div>
+            {% endif %}
+            {% if lead.hitchhiker_summary %}
+                <div class="lead-deck">{{ lead.hitchhiker_summary }}</div>
+            {% endif %}
+            <div class="lead-meta">
+                {% if lead.actors %}
+                    <span class="lead-byline">{{ lead.actors[:4] | join(', ') }}</span>
+                {% endif %}
+                {% if lead.get('is_prediction') %}
+                    &middot; {{ lead.get('confidence', 'medium') | capitalize }} confidence
+                    {% if lead.game_type %} &middot; <span class="tag">{{ lead.game_type }}</span>{% endif %}
+                {% else %}
+                    &middot; {{ lead.source or 'Unknown' }}
+                    {% if lead.game_type %} &middot; <span class="tag">{{ lead.game_type }}</span>{% endif %}
+                    {% if lead.half_life %} &middot; <span style="color: #d4a017;">{{ lead.half_life }}</span>{% endif %}
+                {% endif %}
+            </div>
+            {% if lead.get('is_prediction') and lead.predicted_claims %}
+                <div class="lead-forecast">
+                    <strong>Predicted Claims:</strong>
+                    <ul style="margin: 0.3rem 0 0 1rem; padding: 0;">
+                        {% for claim in lead.predicted_claims[:5] %}
+                            <li>{{ claim }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% elif lead.forecast and not lead.get('is_prediction') %}
+                <div class="lead-forecast">
+                    <strong>Long-range Forecast:</strong> {{ lead.forecast[:400] }}
+                </div>
+            {% endif %}
+            {% if not lead.get('is_prediction') %}
+            <div class="lead-meters">
+                <div class="meter meter-future">
+                    Future
+                    <div class="meter-bar">
+                        <div class="meter-fill" style="width: {{ [0, [lead.future_score * 100, 100]|min]|max|int }}%"></div>
+                    </div>
+                    {{ "%.2f"|format(lead.future_score) }}
+                </div>
+                <div class="meter meter-energy">
+                    Energy
+                    <div class="meter-bar">
+                        <div class="meter-fill" style="width: {{ (lead.narrative_energy * 100)|int }}%"></div>
+                    </div>
+                    {{ "%.0f%%"|format(lead.narrative_energy * 100) }}
+                </div>
+                <div class="meter meter-elite">
+                    Elite
+                    <div class="meter-bar">
+                        <div class="meter-fill" style="width: {{ (lead.elite_utility * 100)|int }}%"></div>
+                    </div>
+                    {{ "%.0f%%"|format(lead.elite_utility * 100) }}
+                </div>
+                <div class="meter meter-meme">
+                    Meme
+                    <div class="meter-bar">
+                        <div class="meter-fill" style="width: {{ (lead.meme_portability * 100)|int }}%"></div>
+                    </div>
+                    {{ "%.0f%%"|format(lead.meme_portability * 100) }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Below the fold -->
+        <div class="fold-rule"><span>Below the Fold</span></div>
+        <div class="below-fold">
+            <div class="story-col">
+                {% set ns = namespace(count=0) %}
+                {% for art in predictions[1:] %}
+                    {% if loop.index0 < (predictions|length - 1) // 2 + 1 %}
+                    {% set ns.count = ns.count + 1 %}
+                    <div class="story-card {{ 'is-prediction' if art.get('is_prediction') }}" style="animation-delay: {{ 3.2 + ns.count * 0.12 }}s;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+                            <span class="importance-rank">{{ loop.index + 1 }}</span>
+                            {% if art.get('is_prediction') %}
+                                <span class="badge-prediction">Prediction</span>
+                            {% elif art.phase_shift_risk == 'high' %}
+                                <span class="badge-phase badge-phase-high">Phase</span>
+                            {% endif %}
+                        </div>
+                        <h3>
+                            {% if art.get('is_prediction') %}{{ art.title }}
+                            {% else %}<a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>{% endif %}
+                        </h3>
+                        {% if art.get('is_prediction') and art.source_title %}
+                            <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ art.source_slug }}">{{ art.source_title[:60] }}</a></div>
+                        {% endif %}
+                        {% if art.hitchhiker_summary %}
+                            <div class="story-deck">{{ art.hitchhiker_summary[:200] }}</div>
+                        {% endif %}
+                        <div class="story-meta">
+                            {% if art.actors %}{{ art.actors[:3] | join(', ') }} &middot; {% endif %}
+                            {% if art.get('is_prediction') %}{{ art.get('confidence', 'medium') | capitalize }} confidence
+                            {% else %}{{ art.source or '' }}{% endif %}
+                            {% if art.game_type %} &middot; <span class="tag">{{ art.game_type }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="story-col">
+                {% set ns2 = namespace(count=0) %}
+                {% for art in predictions[1:] %}
+                    {% if loop.index0 >= (predictions|length - 1) // 2 + 1 %}
+                    {% set ns2.count = ns2.count + 1 %}
+                    <div class="story-card {{ 'is-prediction' if art.get('is_prediction') }}" style="animation-delay: {{ 3.2 + ns2.count * 0.12 }}s;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;">
+                            <span class="importance-rank">{{ loop.index + 1 }}</span>
+                            {% if art.get('is_prediction') %}
+                                <span class="badge-prediction">Prediction</span>
+                            {% elif art.phase_shift_risk == 'high' %}
+                                <span class="badge-phase badge-phase-high">Phase</span>
+                            {% endif %}
+                        </div>
+                        <h3>
+                            {% if art.get('is_prediction') %}{{ art.title }}
+                            {% else %}<a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>{% endif %}
+                        </h3>
+                        {% if art.get('is_prediction') and art.source_title %}
+                            <div class="source-link">Based on: <a href="{{ prefix }}/entry/{{ art.source_slug }}">{{ art.source_title[:60] }}</a></div>
+                        {% endif %}
+                        {% if art.hitchhiker_summary %}
+                            <div class="story-deck">{{ art.hitchhiker_summary[:200] }}</div>
+                        {% endif %}
+                        <div class="story-meta">
+                            {% if art.actors %}{{ art.actors[:3] | join(', ') }} &middot; {% endif %}
+                            {% if art.get('is_prediction') %}{{ art.get('confidence', 'medium') | capitalize }} confidence
+                            {% else %}{{ art.source or '' }}{% endif %}
+                            {% if art.game_type %} &middot; <span class="tag">{{ art.game_type }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar-col">
+                {% if accuracy_stats and accuracy_stats.scored > 0 %}
+                <div class="paper-sidebar" style="animation-delay: 3.1s;">
+                    <h4>Track Record</h4>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.6rem; font-size: 0.72rem; color: var(--text-dim);">
+                        <span>{{ accuracy_stats.scored }} / {{ accuracy_stats.total }} scored</span>
+                        <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; color: #d4a017; font-weight: bold;">{{ "%.0f%%"|format(accuracy_stats.avg_score * 100) }} avg</span>
+                    </div>
+                    {% for r in accuracy_stats.recent[:5] %}
+                    <div class="game-theater-row" style="animation-delay: {{ 3.3 + loop.index0 * 0.12 }}s;">
+                        <div style="color: var(--text); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ r.title[:55] }}</div>
+                        {% if r.accuracy_score >= 0.7 %}
+                            <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem; font-weight: bold; color: #3fb950;">&#10003; {{ "%.0f%%"|format(r.accuracy_score * 100) }}</span>
+                        {% elif r.accuracy_score >= 0.4 %}
+                            <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem; font-weight: bold; color: #d29922;">~ {{ "%.0f%%"|format(r.accuracy_score * 100) }}</span>
+                        {% else %}
+                            <span style="font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 0.7rem; font-weight: bold; color: #ff3333;">&#10007; {{ "%.0f%%"|format(r.accuracy_score * 100) }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if game_dist %}
+                <div class="paper-sidebar" style="animation-delay: 3.3s;">
+                    <h4>Game Theory Theater</h4>
+                    {% set max_cnt = game_dist[0].cnt if game_dist else 1 %}
+                    {% for g in game_dist[:6] %}
+                    <div class="game-theater-row" style="animation-delay: {{ 3.5 + loop.index0 * 0.12 }}s;">
+                        <div class="game-bar-row">
+                            <span class="game-bar-label">{{ g.game_type }}</span>
+                            <div class="game-bar-track">
+                                <div class="game-bar-fill" style="width: {{ (g.cnt / max_cnt * 100)|int }}%;"></div>
+                            </div>
+                            <span class="game-bar-count">{{ g.cnt }}</span>
+                        </div>
+                        {% if g.equilibrium %}
+                            <div class="game-theater-eq">{{ g.equilibrium[:80] }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if wild_cards %}
+                <div class="paper-sidebar" style="animation-delay: 3.6s;">
+                    <h4>Wild Cards</h4>
+                    {% for w in wild_cards %}
+                    <div class="wildcard-item" style="animation-delay: {{ 3.8 + loop.index0 * 0.15 }}s;">
+                        <div><span style="color: #d4a017;">&#9888;</span> <a href="{{ prefix }}/entry/{{ w.slug }}" style="color: var(--text);">{{ w.title[:55] }}</a></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if contradictions %}
+                <div class="paper-sidebar" style="animation-delay: 3.9s;">
+                    <h4>Contradiction Watch</h4>
+                    {% for c in contradictions %}
+                    <div class="contra-item" style="animation-delay: {{ 4.1 + loop.index0 * 0.15 }}s;">
+                        <div><a href="{{ prefix }}/entry/{{ c.slug }}" style="font-size: 0.78rem; color: var(--text);">{{ c.title[:60] }}</a></div>
+                        <div class="contra-claim">Now: <em>{{ (c.claim_now or '')[:80] }}</em></div>
+                        <span class="contra-sev-{{ c.significance or 'medium' }}">&#9632; {{ (c.significance or 'medium')|capitalize }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ PHASE SHIFTS TAB ═══════════ -->
+    <div class="paper-section" id="section-shifts">
+        {% if phase_shifts %}
+        <div class="two-col-grid">
+            <div>
+                {% for p in phase_shifts %}
+                <div class="phase-card {{ 'shift-' + (p.equilibrium_shift or 'none') }}" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4><a href="{{ prefix }}/entry/{{ p.slug }}">{{ p.title[:80] }}</a></h4>
+                    <div class="phase-meta">
+                        {% if p.equilibrium_shift and p.equilibrium_shift != 'none' %}
+                            <span class="badge-shift">Shift: {{ p.equilibrium_shift }}</span>
+                        {% endif %}
+                        {% if p.phase_shift_risk %}
+                            <span class="badge-phase badge-phase-{{ p.phase_shift_risk }}">Phase: {{ p.phase_shift_risk }}</span>
+                        {% endif %}
+                        {% if p.game_type %} &middot; {{ p.game_type }}{% endif %}
+                        {% if p.created %} &middot; {{ p.created[:10] }}{% endif %}
+                    </div>
+                    {% if p.forecast %}
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem; font-style: italic;">{{ p.forecast[:200] }}</div>
+                    {% endif %}
+                    {% if p.pressure_vector %}
+                        <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.3rem;">
+                            <strong style="color: #ff3333;">Pressure:</strong> {{ p.pressure_vector[:150] }}
+                        </div>
+                    {% endif %}
+                    {% if p.stabilization_vector %}
+                        <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem;">
+                            <strong style="color: #3fb950;">Stabilization:</strong> {{ p.stabilization_vector[:150] }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {% if game_dist %}
+                <div class="paper-sidebar" style="animation-delay: 0.3s;">
+                    <h4>Escalation Patterns</h4>
+                    {% for g in game_dist[:6] %}
+                        {% if g.escalation_pattern %}
+                        <div class="game-theater-row" style="animation-delay: {{ 0.5 + loop.index0 * 0.12 }}s;">
+                            <div style="font-weight: bold; color: var(--text);">{{ g.game_type }} ({{ g.cnt }})</div>
+                            <div class="game-theater-eq">{{ g.escalation_pattern[:90] }}</div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No phase shifts detected in the current window.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════ PERSISTENCE TAB ═══════════ -->
+    <div class="paper-section" id="section-persistence">
+        {% if half_lives %}
+        <div class="two-col-grid">
+            <div>
+                {% for h in half_lives %}
+                <div class="halflife-row" style="animation-delay: {{ 0.2 + loop.index0 * 0.08 }}s;">
+                    <span class="halflife-rank">#{{ loop.index + 1 }}</span>
+                    <span class="halflife-title"><a href="{{ prefix }}/entry/{{ h.slug }}">{{ h.title[:65] }}</a></span>
+                    <span class="halflife-value">{{ h.half_life }}</span>
+                    <div class="halflife-bar-track">
+                        {% set hl_weeks = {
+                            'w': h.half_life.replace('w','')|float if 'w' in h.half_life else 0,
+                            'd': h.half_life.replace('d','')|float / 7.0 if 'd' in h.half_life else 0,
+                            'h': h.half_life.replace('h','')|float / 168.0 if 'h' in h.half_life else 0
+                        } %}
+                        {% set hl_val = [hl_weeks.w, hl_weeks.d, hl_weeks.h]|max %}
+                        {% set hl_max = 4.0 %}
+                        <div class="halflife-bar-fill" style="width: {{ [0, [hl_val / hl_max * 100, 100]|min]|max|int }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {% if expiring %}
+                <div class="paper-sidebar" style="animation-delay: 0.3s;">
+                    <h4>Expiring Narratives</h4>
+                    {% for e in expiring %}
+                    <div class="expire-item" style="animation-delay: {{ 0.5 + loop.index0 * 0.12 }}s;">
+                        <div><a href="{{ prefix }}/entry/{{ e.slug }}" style="font-size: 0.78rem; color: var(--text);">{{ e.title[:50] }}</a></div>
+                        <span class="expire-half-life">{{ e.half_life }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No half-life data available.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════ MYTHOLOGY TAB ═══════════ -->
+    <div class="paper-section" id="section-mythology">
+        {% if mythology %}
+        <div class="two-col-grid">
+            <div>
+                {% for m in mythology %}
+                <div class="myth-card" style="animation-delay: {{ 0.2 + loop.index0 * 0.1 }}s;">
+                    <h4><a href="{{ prefix }}/entry/{{ m.slug }}">{{ m.title[:75] }}</a></h4>
+                    <div>
+                        {% if m.archetype %}<span class="myth-archetype">{{ m.archetype }}</span>{% endif %}
+                        {% if m.narrative_arc %}<span class="tag">{{ m.narrative_arc }}</span>{% endif %}
+                    </div>
+                    {% if m.signals %}
+                        <div class="myth-detail"><strong>Signals:</strong> {{ m.signals[:200] }}</div>
+                    {% endif %}
+                    {% if m.cultural_function %}
+                        <div class="myth-detail"><strong>Cultural Function:</strong> {{ m.cultural_function[:200] }}</div>
+                    {% endif %}
+                    {% if m.power_function %}
+                        <div class="myth-detail"><strong>Power Function:</strong> {{ m.power_function[:200] }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sidebar-col">
+                {% if game_dist %}
+                <div class="paper-sidebar" style="animation-delay: 0.3s;">
+                    <h4>Wildcards by Game Type</h4>
+                    {% for g in game_dist[:6] %}
+                        {% if g.wildcard_type %}
+                        <div class="game-theater-row" style="animation-delay: {{ 0.5 + loop.index0 * 0.12 }}s;">
+                            <div style="font-weight: bold; color: var(--text);">{{ g.game_type }}</div>
+                            <div class="game-theater-eq">{{ g.wildcard_type[:90] }}</div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+            <div class="empty-paper"><p>No mythology signals detected in the current window.</p></div>
+        {% endif %}
+    </div>
+
+    {% else %}
+        <div class="empty-paper">
+            <p>The horizon is empty. No forecast data available.</p>
+            <p style="margin-top: 0.5rem;">Next edition in {{ hours_until }} hours.</p>
+        </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="paper-footer" style="animation-delay: {{ 5.0 if predictions else 2.5 }}s;">
+        Edition {{ edition }} &middot;
+        <span class="next-edition">Next in ~{{ hours_until }}h</span> &middot;
+        {{ total }} forecasts &middot;
+        <span class="phase-count">{{ phase_count }} phase shifts</span>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tabs = document.querySelectorAll('.tab-btn');
+    var sections = document.querySelectorAll('.paper-section');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            sections.forEach(function(s) { s.classList.remove('active'); });
+            tab.classList.add('active');
+            var target = document.getElementById('section-' + tab.dataset.section);
+            if (target) {
+                target.classList.add('active');
+                target.querySelectorAll('.lead-story, .story-card, .paper-sidebar, .phase-card, .halflife-row, .myth-card, .wildcard-item, .contra-item, .game-theater-row').forEach(function(el) {
+                    el.style.animation = 'none';
+                    el.offsetHeight;
+                    el.style.animation = '';
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

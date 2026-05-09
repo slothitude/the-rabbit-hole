@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Forecast — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .forecast-header { margin-bottom: 1rem; }
+    .forecast-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+
+    /* Pressure field */
+    .pressure-section { margin-bottom: 2rem; }
+    .section-title { font-size: 0.8rem; color: var(--accent); letter-spacing: 1px; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+    .pressure-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 1rem 1.2rem; margin-bottom: 0.8rem;
+    }
+    .pressure-card h3 { font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .pressure-card h3 a { color: var(--text); }
+    .pressure-card h3 a:hover { color: var(--accent); }
+    .vector-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.5rem 0; }
+    .vector-col { font-size: 0.7rem; }
+    .vector-col .label { color: var(--text-dim); font-size: 0.6rem; letter-spacing: 0.5px; margin-bottom: 0.2rem; }
+    .pressure-col .label { color: #ff8c00; }
+    .stabilization-col .label { color: #00e676; }
+    .score-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; height: 6px; margin-top: 0.2rem; }
+    .score-fill-pressure { height: 100%; border-radius: 2px; background: #ff8c00; }
+    .score-fill-stabilization { height: 100%; border-radius: 2px; background: #00e676; }
+    .net-trajectory {
+        display: inline-block; padding: 0.2rem 0.5rem; border-radius: 3px;
+        font-size: 0.65rem; font-weight: bold; margin-top: 0.3rem;
+    }
+    .net-escalating { background: rgba(255,51,51,0.15); color: #ff3333; border: 1px solid #4d1a1a; }
+    .net-stabilizing { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #1a3a2a; }
+    .net-mutating { background: rgba(179,136,255,0.15); color: #b388ff; border: 1px solid #2a1a4d; }
+    .net-collapsing { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid #3a2a00; }
+    .phase-badge {
+        display: inline-block; padding: 0.15rem 0.4rem; border-radius: 3px;
+        font-size: 0.55rem; font-weight: bold; margin-left: 0.3rem;
+    }
+    .phase-high { background: rgba(255,51,51,0.2); color: #ff3333; }
+    .phase-medium { background: rgba(255,140,0,0.2); color: #ff8c00; }
+    .phase-low { background: rgba(0,230,118,0.2); color: #00e676; }
+
+    /* Standard forecast cards */
+    .forecast-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 1rem 1.2rem; margin-bottom: 0.8rem; border-left: 3px solid var(--accent-dim);
+    }
+    .forecast-card h3 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .forecast-card h3 a { color: var(--text); }
+    .forecast-card h3 a:hover { color: var(--accent); }
+    .forecast-meta { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+    .forecast-text { font-size: 0.8rem; line-height: 1.6; color: var(--text); }
+    .badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.6rem; font-weight: bold; margin-right: 0.2rem; }
+    .badge-arc { background: rgba(0,230,118,0.1); color: #00e676; border: 1px solid #1a3a2a; }
+    .badge-game { background: rgba(255,170,0,0.15); color: #ffaa00; border: 1px solid #3a2a00; }
+</style>
+
+<div class="forecast-header">
+    <h1>NARRATIVE FORECAST</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ total }}</strong> active forecasts</div>
+    <div class="stat-item"><strong>{{ pressure_field|length }}</strong> pressure fields</div>
+</div>
+
+{% if pressure_field %}
+<div class="pressure-section">
+    <div class="section-title">PRESSURE FIELD — Active Force Vectors</div>
+    {% for art in pressure_field %}
+    {% set ps = art.pressure_score or 0 %}
+    {% set ss = art.stabilization_score or 0 %}
+    {% set net = ps - ss %}
+    <div class="pressure-card">
+        <h3>
+            <a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a>
+            {% if art.phase_shift_risk %}
+            <span class="phase-badge {% if art.phase_shift_risk == 'high' %}phase-high{% elif art.phase_shift_risk == 'medium' %}phase-medium{% else %}phase-low{% endif %}">
+                PHASE SHIFT: {{ art.phase_shift_risk }}
+            </span>
+            {% endif %}
+        </h3>
+        <div style="font-size:0.65rem; color:var(--text-dim); margin-bottom:0.3rem;">
+            {% if art.created %}{{ art.created[:16] }}{% endif %}
+            {% if art.game_type %} &middot; {{ art.game_type }}{% endif %}
+        </div>
+        <div class="vector-row">
+            <div class="vector-col pressure-col">
+                <div class="label">PRESSURE {{ "%.0f"|format(ps * 10) }}/10</div>
+                <div class="score-bar"><div class="score-fill-pressure" style="width: {{ ps * 10 }}%;"></div></div>
+                {% if art.pressure_vector %}<div style="font-size:0.6rem; margin-top:0.2rem;">{{ art.pressure_vector[:150] }}</div>{% endif %}
+            </div>
+            <div class="vector-col stabilization-col">
+                <div class="label">STABILIZATION {{ "%.0f"|format(ss * 10) }}/10</div>
+                <div class="score-bar"><div class="score-fill-stabilization" style="width: {{ ss * 10 }}%;"></div></div>
+                {% if art.stabilization_vector %}<div style="font-size:0.6rem; margin-top:0.2rem;">{{ art.stabilization_vector[:150] }}</div>{% endif %}
+            </div>
+        </div>
+        <span class="net-trajectory {% if net > 0.2 %}net-escalating{% elif net < -0.2 %}net-stabilizing{% else %}net-mutating{% endif %}">
+            NET: {{ "%.1f"|format(net) }} — {% if net > 0.2 %}escalating{% elif net < -0.2 %}stabilizing{% elif net < -0.5 %}collapsing{% else %}mutating{% endif %}
+        </span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if forecasts %}
+<div class="section-title">ALL FORECASTS</div>
+{% for art in forecasts %}
+<div class="forecast-card">
+    <h3><a href="{{ prefix }}/entry/{{ art.slug }}">{{ art.title }}</a></h3>
+    <div class="forecast-meta">
+        {% if art.source %}{{ art.source }}{% endif %}
+        {% if art.created %} &middot; {{ art.created[:16] }}{% endif %}
+        {% if art.narrative_arc %}<span class="badge badge-arc">{{ art.narrative_arc }}</span>{% endif %}
+        {% if art.game_type %}<span class="badge badge-game">{{ art.game_type }}</span>{% endif %}
+    </div>
+    {% if art.forecast %}
+    <div class="forecast-text">{{ art.forecast }}</div>
+    {% endif %}
+</div>
+{% endfor %}
+{% elif not pressure_field %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No forecasts yet. Forecasts are generated when narrative patterns are detected across reports.</p>
+</div>
+{% endif %}
+{% endblock %}

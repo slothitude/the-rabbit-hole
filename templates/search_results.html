@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Search: {{ query }} — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<div style="margin-bottom:1.5rem;">
+    <h1 style="font-size:1rem; color:var(--accent); letter-spacing:1px;">
+        SEARCH RESULTS {% if query %}for "{{ query }}"{% endif %}
+    </h1>
+</div>
+
+{% if results %}
+{% for r in results %}
+<div class="entry-card">
+    <h3><a href="{{ prefix }}/entry/{{ r.slug }}">{{ r.title }}</a></h3>
+    <div class="meta">
+        {% for tag in r.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% elif query %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No rabbit holes found matching "{{ query }}". Try digging elsewhere.</p>
+</div>
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>Type something to search the rabbit hole.</p>
+</div>
+{% endif %}
+{% endblock %}
