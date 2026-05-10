@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Game Graph — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .graph-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    #game-graph {
+        width: 100%; height: 600px; background: var(--bg);
+        border: 1px solid var(--border); border-radius: 6px; margin-bottom: 2rem;
+    }
+    .graph-legend {
+        display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+        font-size: 0.7rem; color: var(--text-dim);
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--border); }
+    .section-title { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 0.8rem; text-transform: uppercase; }
+    .edge-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+    .edge-table th, .edge-table td {
+        border: 1px solid var(--border); padding: 0.4rem 0.6rem; text-align: left;
+    }
+    .edge-table th {
+        background: var(--surface); color: var(--text-dim); font-weight: normal;
+        font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .edge-table td { color: var(--text); }
+    .edge-table td a { color: var(--accent); }
+</style>
+
+<div class="graph-header">
+    <h1>GAME GRAPH</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ nodes|length }}</strong> nodes</div>
+    <div class="stat-item"><strong>{{ edges|length }}</strong> edges</div>
+</div>
+
+<div class="graph-legend">
+    <div class="legend-item">
+        <div class="legend-swatch" style="background:#3fb950;"></div> High cooperation
+    </div>
+    <div class="legend-item">
+        <div class="legend-swatch" style="background:#d29922;"></div> Medium cooperation
+    </div>
+    <div class="legend-item">
+        <div class="legend-swatch" style="background:#f85149;"></div> Low cooperation
+    </div>
+    <div class="legend-item">
+        <span style="display:inline-block;width:20px;height:2px;background:var(--accent);"></span> Edge (thickness = strength)
+    </div>
+</div>
+
+<div id="game-graph"></div>
+
+<div class="section-title">Edge Table</div>
+{% if edges %}
+<table class="edge-table">
+    <thead>
+        <tr>
+            <th>From</th>
+            <th>To</th>
+            <th>Dependency Type</th>
+            <th>Mechanism</th>
+            <th>Strength</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for e in edges %}
+        <tr>
+            <td><a href="{{ prefix }}/entry/{{ e.source }}">{{ e.source }}</a></td>
+            <td><a href="{{ prefix }}/entry/{{ e.target }}">{{ e.target }}</a></td>
+            <td>{{ e.dependency_type }}</td>
+            <td>{{ e.mechanism }}</td>
+            <td>{{ "%.2f"|format(e.strength) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="text-align:center; padding:2rem; color:var(--text-dim);">
+    <p>No dependency edges yet. Edges are detected during game analysis.</p>
+</div>
+{% endif %}
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+(function() {
+    var nodes = {{ nodes | tojson }};
+    var edges = {{ edges | tojson }};
+
+    if (!nodes.length) return;
+
+    var container = document.getElementById('game-graph');
+    var width = container.clientWidth;
+    var height = container.clientHeight || 600;
+
+    var svg = d3.select('#game-graph').append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    var sim = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(edges).id(function(d) { return d.id; }).distance(120))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(30));
+
+    var link = svg.append('g').selectAll('line')
+        .data(edges).join('line')
+        .attr('stroke', '#30363d')
+        .attr('stroke-width', function(d) { return Math.max(1, d.strength * 5); });
+
+    var node = svg.append('g').selectAll('g')
+        .data(nodes).join('g')
+        .call(d3.drag()
+            .on('start', function(event, d) { if (!event.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag', function(event, d) { d.fx = event.x; d.fy = event.y; })
+            .on('end', function(event, d) { if (!event.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+        );
+
+    node.append('circle')
+        .attr('r', function(d) { return Math.max(8, (d.cooperation_level || 5) * 2.5); })
+        .attr('fill', function(d) {
+            var cl = d.cooperation_level || 5;
+            if (cl >= 7) return '#3fb950';
+            if (cl >= 4) return '#d29922';
+            return '#f85149';
+        })
+        .attr('stroke', '#0d1117')
+        .attr('stroke-width', 2);
+
+    node.append('text')
+        .text(function(d) { return d.label || d.id; })
+        .attr('dy', -14)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#8b949e')
+        .attr('font-size', '9px')
+        .attr('font-family', 'monospace');
+
+    node.append('title')
+        .text(function(d) { return (d.label || d.id) + '\nCooperation: ' + (d.cooperation_level || 'N/A'); });
+
+    sim.on('tick', function() {
+        link.attr('x1', function(d) { return d.source.x; })
+            .attr('y1', function(d) { return d.source.y; })
+            .attr('x2', function(d) { return d.target.x; })
+            .attr('y2', function(d) { return d.target.y; });
+        node.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+    });
+})();
+</script>
+{% endblock %}

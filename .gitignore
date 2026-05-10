@@ -6,3 +6,6 @@ data/
 *.egg-info/
 dist/
 build/
+_site/
+freeze.log
+preds.json

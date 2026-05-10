@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Beliefs — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .beliefs-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .belief-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 1rem 1.2rem; margin-bottom: 0.8rem; transition: border-color 0.2s;
+    }
+    .belief-card:hover { border-color: var(--accent-dim); }
+    .belief-claim { font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.6rem; }
+    .belief-probability {
+        display: grid; grid-template-columns: 80px 1fr 40px 20px 1fr 40px; gap: 0.4rem;
+        align-items: center; font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;
+    }
+    .belief-bar {
+        background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+        height: 8px; width: 100%;
+    }
+    .belief-bar-prior { background: var(--text-dim); height: 100%; border-radius: 3px; }
+    .belief-bar-posterior { background: var(--accent); height: 100%; border-radius: 3px; }
+    .belief-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .delta-badge {
+        display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px;
+        font-size: 0.6rem; font-weight: bold; letter-spacing: 0.5px;
+    }
+    .delta-up { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid #3fb950; }
+    .delta-down { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid #f85149; }
+    .delta-flat { background: rgba(139,148,158,0.15); color: #8b949e; border: 1px solid #8b949e; }
+    .evidence-strength-badge {
+        padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.6rem;
+        font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .strength-strong { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid #3fb950; }
+    .strength-moderate { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid #d29922; }
+    .strength-weak { background: rgba(139,148,158,0.15); color: #8b949e; border: 1px solid #8b949e; }
+</style>
+
+<div class="beliefs-header">
+    <h1>BAYESIAN BELIEF TRACKER</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ beliefs|length }}</strong> beliefs tracked</div>
+</div>
+
+{% if beliefs %}
+{% for b in beliefs %}
+<div class="belief-card">
+    <div class="belief-claim">{{ b.claim_text }}</div>
+    <div class="belief-probability">
+        <span>Prior</span>
+        <div class="belief-bar">
+            <div class="belief-bar-prior" style="width:{{ (b.prior * 100)|int }}%"></div>
+        </div>
+        <span>{{ "%.0f"|format(b.prior * 100) }}%</span>
+
+        <span style="text-align:center">→</span>
+
+        <div class="belief-bar">
+            <div class="belief-bar-posterior" style="width:{{ (b.posterior * 100)|int }}%"></div>
+        </div>
+        <span>{{ "%.0f"|format(b.posterior * 100) }}%</span>
+    </div>
+    <div class="belief-meta">
+        {% set delta = b.posterior - b.prior %}
+        <span class="delta-badge {{ 'delta-up' if delta > 0.05 else ('delta-down' if delta < -0.05 else 'delta-flat') }}">
+            {{ "%+.0f"|format(delta * 100) }}%
+        </span>
+        <span class="evidence-strength-badge strength-{{ b.evidence_strength }}">
+            {{ b.evidence_strength }}
+        </span>
+        <span class="tag">{{ b.evidence_type }}</span>
+        {% if b.article_slug %}
+        <a href="{{ prefix }}/entry/{{ b.article_slug }}" style="font-size:0.7rem">source</a>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No beliefs tracked yet. Beliefs are updated as articles are analyzed.</p>
+</div>
+{% endif %}
+{% endblock %}

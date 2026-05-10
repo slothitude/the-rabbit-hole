@@ -41,6 +41,9 @@ def actor_profile(name):
 
     credibility = round(1.0 - (controlled_count / max(len(articles), 1)), 2)
 
+    # Upgrade 5: Actor utility model
+    utility_profile = base.get_actor_profile(name)
+
     return render_template("actor_profile.html",
         name=name,
         articles=articles,
@@ -50,4 +53,5 @@ def actor_profile(name):
         arc_counts=arc_counts,
         co_actors=co_actors,
         credibility=credibility,
+        utility_profile=utility_profile,
     )

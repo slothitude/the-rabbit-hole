@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Fitness — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .fitness-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .section-title { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 0.8rem; text-transform: uppercase; }
+    .dist-chart {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 1rem 1.2rem; margin-bottom: 2rem;
+    }
+    .dist-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .dist-label { font-size: 0.7rem; color: var(--text-dim); min-width: 120px; text-align: right; }
+    .dist-bar-wrap {
+        flex: 1; background: var(--bg); border: 1px solid var(--border);
+        border-radius: 3px; height: 18px; position: relative;
+    }
+    .dist-bar {
+        height: 100%; border-radius: 3px;
+        background: var(--accent);
+        display: flex; align-items: center; justify-content: flex-end; padding-right: 0.4rem;
+    }
+    .dist-bar span { font-size: 0.55rem; color: var(--bg); font-weight: bold; }
+    .strategy-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; transition: border-color 0.2s;
+    }
+    .strategy-card:hover { border-color: var(--accent-dim); }
+    .strategy-card h3 { font-size: 0.85rem; color: var(--accent); margin-bottom: 0.4rem; }
+    .strategy-stats { display: flex; gap: 0.8rem; font-size: 0.7rem; color: var(--text-dim); flex-wrap: wrap; }
+    .strategy-stats strong { color: var(--text); }
+    .fitness-meter { margin: 0.4rem 0; }
+    .fitness-label { font-size: 0.6rem; color: var(--text-dim); display: flex; justify-content: space-between; }
+    .fitness-bar {
+        background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+        height: 6px; width: 100%; margin-top: 0.15rem;
+    }
+    .fitness-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+    .next-cycle-badge {
+        display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px;
+        font-size: 0.6rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+        background: rgba(88,166,255,0.1); color: #58a6ff; border: 1px solid #58a6ff;
+    }
+</style>
+
+<div class="fitness-header">
+    <h1>FITNESS LANDSCAPE</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ strategies|length }}</strong> strategies tracked</div>
+    <div class="stat-item"><strong>{{ distribution|map(attribute='count')|sum }}</strong> total observations</div>
+</div>
+
+<!-- Strategy Distribution -->
+<div class="section-title">Strategy Distribution</div>
+{% if distribution %}
+<div class="dist-chart">
+    {% set max_count = distribution|map(attribute='count')|max %}
+    {% for d in distribution %}
+    <div class="dist-row">
+        <span class="dist-label">{{ d.strategy_type }}</span>
+        <div class="dist-bar-wrap">
+            <div class="dist-bar" style="width:{{ (d.count / max_count * 100)|int }}%;">
+                <span>{{ d.count }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:2rem; color:var(--text-dim); margin-bottom:2rem;">
+    <p>No strategy distribution data yet.</p>
+</div>
+{% endif %}
+
+<!-- Strategy Cards -->
+<div class="section-title">Strategy Details</div>
+{% if strategies %}
+{% for s in strategies %}
+<div class="strategy-card">
+    <h3>
+        {{ s.strategy_type }}
+        {% if s.predicted_next_cycle %}
+        <span class="next-cycle-badge">next: {{ s.predicted_next_cycle }}</span>
+        {% endif %}
+    </h3>
+    <div class="fitness-meter">
+        <div class="fitness-label"><span>Fitness Score</span><span>{{ "%.2f"|format(s.fitness_score) }}</span></div>
+        <div class="fitness-bar"><div class="fitness-fill" style="width:{{ (s.fitness_score * 100)|int }}%"></div></div>
+    </div>
+    <div class="strategy-stats">
+        <span>Growth: <strong>{{ "%+.1f"|format(s.growth_rate * 100) }}%</strong></span>
+        <span>Articles: <strong>{{ s.article_count }}</strong></span>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:2rem; color:var(--text-dim);">
+    <p>No strategy data yet. Strategies are tracked during article analysis.</p>
+</div>
+{% endif %}
+{% endblock %}

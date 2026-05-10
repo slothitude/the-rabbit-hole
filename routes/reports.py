@@ -173,7 +173,12 @@ def articles_with_forecasts():
                    a.narrative_energy, a.pressure_score, a.stabilization_score,
                    a.phase_shift_risk, a.pressure_vector, a.stabilization_vector,
                    a.liquidity_score, a.cheap_narrative, a.expensive_narrative,
-                   a.hitchhiker_summary
+                   a.hitchhiker_summary,
+                   a.signal_type, a.signal_credibility, a.deception_probability,
+                   a.game_family, a.move_type, a.strategy_detected, a.cooperation_level,
+                   a.cascade_risk, a.independent_sources, a.reversal_risk,
+                   a.strategy_type, a.strategy_fitness, a.predicted_next_cycle,
+                   a.cognitive_bias_score
             FROM articles a
             WHERE a.forecast IS NOT NULL AND a.forecast != ''
               AND a.created >= datetime('now', '-12 hours')

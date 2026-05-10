@@ -1,125 +1,106 @@
-"""Snapshot the live Rabbit Hole site into static HTML for GitHub Pages."""
+"""Snapshot the Paper page into a fully standalone static HTML for GitHub Pages."""
 from __future__ import annotations
+import base64
 import os
-import sys
-import time
+import re
 from pathlib import Path
 import requests
 
 BASE = os.environ.get("RABBIT_URL", "http://192.168.0.33:5421")
 OUT = Path(os.environ.get("FREEZE_DIR", "_site"))
-
-# Routes to snapshot
-ROUTES: list[str] = [
-    "/",
-    "/paper",
-    "/articles",
-    "/timeline",
-    "/actors",
-    "/contradictions",
-    "/forecast",
-    "/mythology",
-    "/energy",
-    "/persistence",
-    "/reflexivity",
-    "/reports",
-    "/reports/book",
-    "/map",
-    "/search",
-    "/today",
-    "/tomorrow",
-    "/day-after-tomorrow",
-    "/future",
-]
-
-# Tab variants for /paper
-PAPER_TABS = ["today", "tomorrow", "day2", "future"]
-
-
-def fetch(route: str, params: dict | None = None) -> str:
-    url = BASE + route
-    r = requests.get(url, params=params, timeout=30)
-    r.raise_for_status()
-    return r.text
-
-
-def save(route: str, html: str):
-    # Map routes to file paths
-    if route == "/" or route == "":
-        path = OUT / "index.html"
-    elif route.endswith("/"):
-        path = OUT / route.strip("/") / "index.html"
-    else:
-        # Save as .html file
-        path = OUT / (route.strip("/") + ".html")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(html, encoding="utf-8")
-    print(f"  saved {path.relative_to(OUT)}")
-
-
-def snapshot_entries():
-    """Fetch entry pages from the API or sitemap."""
-    try:
-        r = requests.get(f"{BASE}/map", timeout=30)
-        if r.status_code == 200:
-            # Parse entry slugs from the map page
-            import re
-            slugs = re.findall(r'href="([^"]*?/entry/([^"]+))"', r.text)
-            seen = set()
-            for href, slug in slugs:
-                if slug not in seen:
-                    seen.add(slug)
-                    try:
-                        html = fetch(f"/entry/{slug}")
-                        save(f"/entry/{slug}", html)
-                        time.sleep(0.1)
-                    except Exception as e:
-                        print(f"  skip entry/{slug}: {e}")
-            print(f"  entries: {len(seen)} slugs")
-    except Exception as e:
-        print(f"  entries failed: {e}")
+SPLASH = Path(__file__).parent / "static" / "splash.jpg"
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    print(f"Snapshotting {BASE} -> {OUT}")
+    print(f"Snapshotting {BASE}/paper -> {OUT}")
 
-    # Main routes
-    for route in ROUTES:
-        try:
-            html = fetch(route)
-            save(route, html)
-        except Exception as e:
-            print(f"  FAIL {route}: {e}")
+    r = requests.get(f"{BASE}/paper", timeout=30)
+    r.raise_for_status()
+    html = r.text
 
-    # Paper tab variants
-    for tab in PAPER_TABS:
-        try:
-            html = fetch("/paper", params={"tab": tab})
-            save(f"/paper-{tab}", html)
-        except Exception as e:
-            print(f"  FAIL /paper?tab={tab}: {e}")
+    # Extract ALL <style> blocks from the paper page (base + paper CSS)
+    styles = re.findall(r'<style>(.*?)</style>', html, re.DOTALL)
+    all_css = "\n".join(styles)
 
-    # Entry pages
-    snapshot_entries()
+    # Extract just the <main> content (no site header/nav/footer)
+    main_content = re.search(r'<main[^>]*>(.*?)</main>', html, re.DOTALL)
+    if not main_content:
+        print("ERROR: Could not find <main> content")
+        return
+    content = main_content.group(1)
 
-    # Tier pages
-    for t in range(1, 6):
-        try:
-            html = fetch(f"/tier/{t}")
-            save(f"/tier/{t}", html)
-        except Exception as e:
-            print(f"  FAIL /tier/{t}: {e}")
+    # Rewrite all internal href="/..." to point to live site
+    content = re.sub(r'href="/(?!/)', f'href="{BASE}/', content)
 
-    # Category pages
-    for cat in ["conspiracy", "geopolitics", "technology", "finance", "society"]:
-        try:
-            html = fetch(f"/category/{cat}")
-            save(f"/category/{cat}", html)
-        except Exception as e:
-            print(f"  FAIL /category/{cat}: {e}")
+    # Extract JS from the page
+    scripts = re.findall(r'<script[^>]*>(.*?)</script>', html, re.DOTALL)
+    all_js = "\n".join(s for s in scripts if s.strip())
 
-    print(f"\nDone. Static site in {OUT}/")
+    # Base64-encode splash image for self-contained HTML
+    splash_b64 = ""
+    if SPLASH.exists():
+        splash_b64 = base64.b64encode(SPLASH.read_bytes()).decode()
+        print(f"  inlined splash image ({len(splash_b64)} bytes)")
+
+    splash_css = """
+    /* Splash screen */
+    .splash {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #0a0a0a;
+        display: flex; align-items: center; justify-content: center;
+        transition: opacity 0.8s ease-out;
+    }
+    .splash.fade-out { opacity: 0; pointer-events: none; }
+    .splash img {
+        max-width: 80vw; max-height: 80vh;
+        object-fit: contain;
+        animation: splashIn 1s ease-out;
+    }
+    @keyframes splashIn {
+        0% { opacity: 0; transform: scale(0.95); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    """
+
+    splash_html = ""
+    if splash_b64:
+        splash_html = f"""
+    <div class="splash" id="splash">
+        <img src="data:image/jpeg;base64,{splash_b64}" alt="The Rabbit Hole">
+    </div>
+    <script>
+    setTimeout(function() {{
+        var s = document.getElementById('splash');
+        if (s) {{ s.classList.add('fade-out'); setTimeout(function() {{ s.remove(); }}, 800); }}
+    }}, 2500);
+    </script>
+    """
+
+    # Build standalone page — no site chrome
+    standalone = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rabbit Hole — Tomorrow's Paper</title>
+    <style>
+{all_css}
+{splash_css}
+    </style>
+</head>
+<body>
+{splash_html}
+{content}
+<script>
+{all_js}
+</script>
+</body>
+</html>"""
+
+    (OUT / "index.html").write_text(standalone, encoding="utf-8")
+    print(f"  saved index.html ({len(standalone)} bytes)")
+    print(f"Done.")
 
 
 if __name__ == "__main__":

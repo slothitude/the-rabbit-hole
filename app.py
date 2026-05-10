@@ -43,6 +43,13 @@ def create_app() -> Flask:
     from routes.day_after import day_after_bp
     from routes.future import future_bp
     from routes.today import today_bp
+    from routes.beliefs import beliefs_bp
+    from routes.biases import biases_bp
+    from routes.signals import signals_bp
+    from routes.games import games_bp
+    from routes.cascades import cascades_bp
+    from routes.fitness import fitness_bp
+    from routes.game_graph import game_graph_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(entry_bp)
@@ -66,6 +73,13 @@ def create_app() -> Flask:
     app.register_blueprint(tomorrow_bp)
     app.register_blueprint(day_after_bp)
     app.register_blueprint(future_bp)
+    app.register_blueprint(beliefs_bp)
+    app.register_blueprint(biases_bp)
+    app.register_blueprint(signals_bp)
+    app.register_blueprint(games_bp)
+    app.register_blueprint(cascades_bp)
+    app.register_blueprint(fitness_bp)
+    app.register_blueprint(game_graph_bp)
 
     # Serve images from shared data dir
     import os

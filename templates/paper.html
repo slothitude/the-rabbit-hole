@@ -12,7 +12,7 @@
             The Rabbit Hole
             <span id="mode-badge" class="mode-indicator mode-forecast">24H FORECAST</span>
         </div>
-        <div class="masthead-date">
+        <div class="masthead-date" id="masthead-date">
             {{ today_date.strftime('%A, %B %d, %Y') }}
             &mdash; Edition {{ edition }}
         </div>
@@ -64,10 +64,10 @@
 <script>
 (function() {
     var modeConfig = {
-        today:    { badge: 'LIVE',      cls: 'mode-live',     tagline: '"What\'s happening now"', rules: ['Lead','Breaking','Conflict','Viral'] },
-        tomorrow: { badge: '24H FORECAST', cls: 'mode-forecast', tagline: '"What happens next"',  rules: ['Lead','Predict','Conflict','Track'] },
-        day2:     { badge: '48H FORECAST', cls: 'mode-48h',     tagline: '"What WILL happen in 48 hours"', rules: ['Predict','Escalate','Disrupt','Resolve'] },
-        future:   { badge: '72H+',      cls: 'mode-72h',      tagline: '"What will survive the next 72 hours to 6 months"', rules: ['Persist','Shift','Endure','Myth'] }
+        today:    { badge: 'LIVE',         cls: 'mode-live',     tagline: '"What\'s happening now"',                              rules: ['Lead','Breaking','Conflict','Viral'],   dayOffset: 0,  dateLabel: null },
+        tomorrow: { badge: '24H FORECAST',  cls: 'mode-forecast', tagline: '"What happens next"',                                 rules: ['Lead','Predict','Conflict','Track'],    dayOffset: 1,  dateLabel: null },
+        day2:     { badge: '48H FORECAST',  cls: 'mode-48h',     tagline: '"What WILL happen in 48 hours"',                       rules: ['Predict','Escalate','Disrupt','Resolve'],dayOffset: 2, dateLabel: null },
+        future:   { badge: '72H+',         cls: 'mode-72h',      tagline: '"What will survive the next 72 hours to 6 months"',    rules: ['Persist','Shift','Endure','Myth'],       dayOffset: 3,  dateLabel: '72h — 6 Months Outlook' }
     };
 
     var topBtns = document.querySelectorAll('.top-tab-btn');
@@ -75,6 +75,27 @@
     var modeBadge = document.getElementById('mode-badge');
     var tagline = document.getElementById('masthead-tagline');
     var rulesEl = document.getElementById('masthead-rules');
+    var dateEl = document.getElementById('masthead-date');
+    var baseDate = new Date();
+
+    function fmtDate(d) {
+        var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    function updateDate(target) {
+        if (!dateEl) return;
+        var cfg = modeConfig[target];
+        if (!cfg) return;
+        if (cfg.dateLabel) {
+            dateEl.innerHTML = cfg.dateLabel + ' &mdash; Edition {{ edition }}';
+        } else {
+            var d = new Date(baseDate);
+            d.setDate(d.getDate() + cfg.dayOffset);
+            dateEl.innerHTML = fmtDate(d) + ' &mdash; Edition {{ edition }}';
+        }
+    }
 
     // Top-level tab switching
     topBtns.forEach(function(btn) {
@@ -105,6 +126,7 @@
             if (cfg && rulesEl) {
                 rulesEl.innerHTML = cfg.rules.map(function(r) { return '<span>' + r + '</span>'; }).join('');
             }
+            updateDate(target);
         });
     });
 
@@ -134,8 +156,10 @@
 
     // Activate initial tab from query param
     var params = new URLSearchParams(window.location.search);
-    var initialTab = params.get('tab');
-    if (initialTab && modeConfig[initialTab]) {
+    var initialTab = params.get('tab') || 'tomorrow';
+    // Set initial date for default tab
+    updateDate(initialTab);
+    if (initialTab && initialTab !== 'tomorrow' && modeConfig[initialTab]) {
         var btn = document.querySelector('.top-tab-btn[data-top="' + initialTab + '"]');
         if (btn) btn.click();
     }

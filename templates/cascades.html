@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Cascades — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .cascades-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .cascade-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 1rem 1.2rem; margin-bottom: 0.8rem; transition: border-color 0.2s;
+    }
+    .cascade-card:hover { border-color: var(--accent-dim); }
+    .cascade-card.risk-high { border-left: 3px solid #f85149; }
+    .cascade-card.risk-medium { border-left: 3px solid #d29922; }
+    .cascade-card.risk-low { border-left: 3px solid #3fb950; }
+    .cascade-card h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .cascade-card h3 a { color: var(--text); }
+    .cascade-card h3 a:hover { color: var(--accent); text-decoration: none; }
+    .cascade-risk-badge {
+        display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px;
+        font-size: 0.6rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .risk-high-badge { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid #f85149; }
+    .risk-medium-badge { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid #d29922; }
+    .risk-low-badge { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid #3fb950; }
+    .cascade-meters { margin-top: 0.6rem; }
+    .meter-row { margin-bottom: 0.4rem; }
+    .meter-label { font-size: 0.65rem; color: var(--text-dim); display: flex; justify-content: space-between; }
+    .meter-bar {
+        background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+        height: 6px; width: 100%; margin-top: 0.15rem;
+    }
+    .meter-fill { height: 100%; border-radius: 3px; }
+    .fill-cascade { background: #f85149; }
+    .fill-reversal { background: #d29922; }
+    .fill-velocity { background: var(--accent); }
+    .cascade-meta {
+        display: flex; gap: 0.8rem; margin-top: 0.5rem; font-size: 0.65rem; color: var(--text-dim);
+    }
+    .cascade-meta strong { color: var(--text); }
+</style>
+
+<div class="cascades-header">
+    <h1>CASCADE SCANNER</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ cascades|length }}</strong> narratives scanned</div>
+</div>
+
+{% if cascades %}
+{% for c in cascades %}
+{% set risk_level = 'high' if c.cascade_risk >= 7 else ('medium' if c.cascade_risk >= 4 else 'low') %}
+<div class="cascade-card risk-{{ risk_level }}">
+    <h3>
+        <a href="{{ prefix }}/entry/{{ c.slug }}">{{ c.title }}</a>
+        <span class="cascade-risk-badge risk-{{ risk_level }}-badge">
+            {{ risk_level }} risk
+        </span>
+    </h3>
+    <div class="cascade-meters">
+        <div class="meter-row">
+            <div class="meter-label"><span>Cascade Risk</span><span>{{ c.cascade_risk }}/10</span></div>
+            <div class="meter-bar"><div class="meter-fill fill-cascade" style="width:{{ c.cascade_risk * 10 }}%"></div></div>
+        </div>
+        <div class="meter-row">
+            <div class="meter-label"><span>Reversal Risk</span><span>{{ c.reversal_risk }}/10</span></div>
+            <div class="meter-bar"><div class="meter-fill fill-reversal" style="width:{{ c.reversal_risk * 10 }}%"></div></div>
+        </div>
+        <div class="meter-row">
+            <div class="meter-label"><span>Narrative Velocity</span><span>{{ c.narrative_velocity }}/10</span></div>
+            <div class="meter-bar"><div class="meter-fill fill-velocity" style="width:{{ c.narrative_velocity * 10 }}%"></div></div>
+        </div>
+    </div>
+    <div class="cascade-meta">
+        <span><strong>{{ c.independent_sources }}</strong> independent sources</span>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No cascade data yet. Cascade risk is computed during article analysis.</p>
+</div>
+{% endif %}
+{% endblock %}

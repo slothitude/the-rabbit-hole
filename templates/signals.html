@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Signals — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .signals-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .signal-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .signal-col-header {
+        font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase;
+        padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); margin-bottom: 0.8rem;
+    }
+    .col-costly { color: #3fb950; }
+    .col-cheap { color: #d29922; }
+    .col-noise { color: #8b949e; }
+    .signal-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; transition: border-color 0.2s;
+    }
+    .signal-card:hover { border-color: var(--accent-dim); }
+    .signal-card h4 { font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .signal-card h4 a { color: var(--text); }
+    .signal-card h4 a:hover { color: var(--accent); text-decoration: none; }
+    .signal-badge {
+        display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px;
+        font-size: 0.55rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+        margin-bottom: 0.4rem;
+    }
+    .badge-costly { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid #3fb950; }
+    .badge-cheap { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid #d29922; }
+    .badge-noise { background: rgba(139,148,158,0.1); color: #8b949e; border: 1px solid #8b949e; }
+    .signal-meter { margin-bottom: 0.3rem; }
+    .signal-meter-label { font-size: 0.6rem; color: var(--text-dim); display: flex; justify-content: space-between; }
+    .signal-meter-bar {
+        background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+        height: 6px; width: 100%;
+    }
+    .signal-meter-fill { height: 100%; border-radius: 3px; }
+    .fill-cred { background: #3fb950; }
+    .fill-irrev { background: #58a6ff; }
+    .fill-verif { background: var(--accent); }
+    .deception { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.4rem; }
+    .deception strong { color: #f85149; }
+    @media (max-width: 768px) {
+        .signal-columns { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="signals-header">
+    <h1>SIGNAL LAB</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ signals|length }}</strong> signals classified</div>
+</div>
+
+{% if signals %}
+<div class="signal-columns">
+    <!-- Costly Signals -->
+    <div>
+        <div class="signal-col-header col-costly">Costly Signals</div>
+        {% for s in signals if s.signal_type == 'costly' %}
+        <div class="signal-card">
+            <span class="signal-badge badge-costly">{{ s.signal_type }}</span>
+            <h4><a href="{{ prefix }}/entry/{{ s.slug }}">{{ s.title }}</a></h4>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Credibility</span><span>{{ s.credibility }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-cred" style="width:{{ s.credibility * 10 }}%"></div></div>
+            </div>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Irreversibility</span><span>{{ s.irreversibility }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-irrev" style="width:{{ s.irreversibility * 10 }}%"></div></div>
+            </div>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Verifiability</span><span>{{ s.verifiability }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-verif" style="width:{{ s.verifiability * 10 }}%"></div></div>
+            </div>
+            <div class="deception">Deception prob: <strong>{{ "%.0f"|format(s.deception_probability * 100) }}%</strong></div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Cheap Talk -->
+    <div>
+        <div class="signal-col-header col-cheap">Cheap Talk</div>
+        {% for s in signals if s.signal_type == 'cheap' %}
+        <div class="signal-card">
+            <span class="signal-badge badge-cheap">{{ s.signal_type }}</span>
+            <h4><a href="{{ prefix }}/entry/{{ s.slug }}">{{ s.title }}</a></h4>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Credibility</span><span>{{ s.credibility }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-cred" style="width:{{ s.credibility * 10 }}%"></div></div>
+            </div>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Irreversibility</span><span>{{ s.irreversibility }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-irrev" style="width:{{ s.irreversibility * 10 }}%"></div></div>
+            </div>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Verifiability</span><span>{{ s.verifiability }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-verif" style="width:{{ s.verifiability * 10 }}%"></div></div>
+            </div>
+            <div class="deception">Deception prob: <strong>{{ "%.0f"|format(s.deception_probability * 100) }}%</strong></div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Noise / Other -->
+    <div>
+        <div class="signal-col-header col-noise">Noise / Other</div>
+        {% for s in signals if s.signal_type not in ['costly', 'cheap'] %}
+        <div class="signal-card">
+            <span class="signal-badge badge-noise">{{ s.signal_type }}</span>
+            <h4><a href="{{ prefix }}/entry/{{ s.slug }}">{{ s.title }}</a></h4>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Credibility</span><span>{{ s.credibility }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-cred" style="width:{{ s.credibility * 10 }}%"></div></div>
+            </div>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Irreversibility</span><span>{{ s.irreversibility }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-irrev" style="width:{{ s.irreversibility * 10 }}%"></div></div>
+            </div>
+            <div class="signal-meter">
+                <div class="signal-meter-label"><span>Verifiability</span><span>{{ s.verifiability }}/10</span></div>
+                <div class="signal-meter-bar"><div class="signal-meter-fill fill-verif" style="width:{{ s.verifiability * 10 }}%"></div></div>
+            </div>
+            <div class="deception">Deception prob: <strong>{{ "%.0f"|format(s.deception_probability * 100) }}%</strong></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No signals classified yet. Signals are extracted during article analysis.</p>
+</div>
+{% endif %}
+{% endblock %}

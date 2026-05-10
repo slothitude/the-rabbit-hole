@@ -24,6 +24,7 @@ def paper_home():
     hours_until = round((next_edition - now).total_seconds() / 3600, 1)
 
     # ── Cycle strings ──
+    today_cycle = f"{now.strftime('%Y-%m-%d')}-ed1"
     current_cycle = f"{now.strftime('%Y-%m-%d')}-ed{edition}"
     tomorrow = now + timedelta(days=1)
     next_day_cycle = f"{tomorrow.strftime('%Y-%m-%d')}-ed1"
@@ -36,8 +37,8 @@ def paper_home():
     today_section_counts = {name: len(arts) for name, arts in today_sections.items()}
 
     # ── TOMORROW: 24h predictions ──
-    tomorrow_preds = base.get_predictions(limit=20, cycle=current_cycle)
-    tomorrow_sections = base.get_predictions_by_section(cycle=current_cycle, limit_per_section=8)
+    tomorrow_preds = base.get_predictions(limit=20, cycle=today_cycle)
+    tomorrow_sections = base.get_predictions_by_section(cycle=today_cycle, limit_per_section=8)
     tomorrow_section_counts = {name: len(arts) for name, arts in tomorrow_sections.items()}
 
     # ── DAY+2: 48h predictions ──

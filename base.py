@@ -2,6 +2,7 @@
 from __future__ import annotations
 import os
 import re
+import hashlib
 import sqlite3
 import yaml
 from dataclasses import dataclass, field
@@ -463,6 +464,165 @@ def init_articles_db():
         )
     """)
     db.execute("CREATE INDEX IF NOT EXISTS idx_ea_alias ON entity_aliases(alias)")
+
+    # Add new columns via ALTER TABLE (safe — ignores if column already exists)
+    new_columns = [
+        ("cognitive_bias_score", "REAL DEFAULT 0.0"),
+        ("signal_type", "TEXT"),
+        ("signal_credibility", "REAL DEFAULT 0.0"),
+        ("signal_irreversibility", "REAL DEFAULT 0.0"),
+        ("signal_verifiability", "REAL DEFAULT 0.0"),
+        ("signal_noise_ratio", "REAL DEFAULT 0.0"),
+        ("deception_probability", "REAL DEFAULT 0.0"),
+        ("game_family", "TEXT"),
+        ("move_type", "TEXT"),
+        ("strategy_detected", "TEXT"),
+        ("cooperation_level", "REAL DEFAULT 0.0"),
+        ("game_phase", "TEXT"),
+        ("cascade_risk", "REAL DEFAULT 0.0"),
+        ("independent_sources", "INTEGER DEFAULT 0"),
+        ("reversal_risk", "REAL DEFAULT 0.0"),
+        ("narrative_velocity", "REAL DEFAULT 0.0"),
+        ("strategy_type", "TEXT"),
+        ("strategy_fitness", "REAL DEFAULT 0.0"),
+        ("predicted_next_cycle", "TEXT"),
+    ]
+    for col_name, col_type in new_columns:
+        try:
+            db.execute(f"ALTER TABLE articles ADD COLUMN {col_name} {col_type}")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
+    # Upgrade 1: Bayesian Belief Tracker
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS belief_states (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            claim_hash TEXT NOT NULL,
+            claim_text TEXT NOT NULL,
+            prior REAL DEFAULT 0.5,
+            posterior REAL DEFAULT 0.5,
+            evidence_strength TEXT DEFAULT 'moderate',
+            evidence_type TEXT DEFAULT 'expert opinion',
+            source_slug TEXT,
+            actor TEXT,
+            cycle TEXT,
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_bs_hash ON belief_states(claim_hash)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_bs_slug ON belief_states(source_slug)")
+
+    # Upgrade 2: Cognitive Bias Detector
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS article_biases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            article_slug TEXT NOT NULL,
+            bias_type TEXT NOT NULL,
+            detected INTEGER DEFAULT 0,
+            detail TEXT,
+            severity REAL DEFAULT 0.0,
+            FOREIGN KEY (article_slug) REFERENCES articles(slug)
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_ab_slug ON article_biases(article_slug)")
+
+    # Upgrade 4: Game Ledger
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS game_instances (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_hash TEXT UNIQUE NOT NULL,
+            game_type TEXT,
+            actors TEXT,
+            move_number INTEGER DEFAULT 1,
+            strategy_observed TEXT,
+            cooperation_level REAL DEFAULT 0.5,
+            equilibrium_state TEXT DEFAULT 'active',
+            created TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_gi_hash ON game_instances(game_hash)")
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS game_moves (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL REFERENCES game_instances(id),
+            article_slug TEXT NOT NULL,
+            move_number INTEGER NOT NULL,
+            move_type TEXT,
+            move_description TEXT,
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_gm_game ON game_moves(game_id)")
+
+    # Upgrade 5: Actor Utility Modeler
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS actor_profiles (
+            actor TEXT PRIMARY KEY,
+            inferred_preferences TEXT,
+            red_lines TEXT,
+            payoff_structure TEXT,
+            credibility_score REAL DEFAULT 0.5,
+            bluff_history TEXT,
+            strategy_profile TEXT,
+            updated TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS actor_positions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor TEXT NOT NULL,
+            article_slug TEXT NOT NULL,
+            stated_position TEXT,
+            detected_position TEXT,
+            position_type TEXT,
+            confidence REAL DEFAULT 0.5,
+            created TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (article_slug) REFERENCES articles(slug)
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_ap_actor ON actor_positions(actor)")
+
+    # Upgrade 7: Fitness Landscape
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS narrative_strategies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            strategy_hash TEXT UNIQUE NOT NULL,
+            strategy_type TEXT NOT NULL,
+            fitness_score REAL DEFAULT 0.0,
+            population_share REAL DEFAULT 0.0,
+            growth_rate REAL DEFAULT 0.0,
+            generation INTEGER DEFAULT 1,
+            created TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_ns_hash ON narrative_strategies(strategy_hash)")
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS narrative_strategy_articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            article_slug TEXT NOT NULL,
+            strategy_id INTEGER NOT NULL REFERENCES narrative_strategies(id),
+            fitness_contribution REAL DEFAULT 0.0,
+            FOREIGN KEY (article_slug) REFERENCES articles(slug)
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_nsa_strategy ON narrative_strategy_articles(strategy_id)")
+
+    # Upgrade 8: Game Graph
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS game_dependencies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_game_id INTEGER NOT NULL REFERENCES game_instances(id),
+            target_game_id INTEGER NOT NULL REFERENCES game_instances(id),
+            dependency_type TEXT,
+            strength REAL DEFAULT 0.5,
+            mechanism TEXT,
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_gd_source ON game_dependencies(source_game_id)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_gd_target ON game_dependencies(target_game_id)")
     db.commit()
     db.close()
 
@@ -483,9 +643,15 @@ def upsert_article(meta: dict) -> None:
                 counterforce_actors, offramps, escalation_triggers, phase_shift_risk,
                 half_life, meme_portability, elite_utility, symbolic_density, visual_anchors,
                 enemy_coherence, liquidity_score, cheap_narrative, expensive_narrative,
-                hitchhiker_summary)
+                hitchhiker_summary,
+                cognitive_bias_score, signal_type, signal_credibility, signal_irreversibility,
+                signal_verifiability, signal_noise_ratio, deception_probability,
+                game_family, move_type, strategy_detected, cooperation_level, game_phase,
+                cascade_risk, independent_sources, reversal_risk, narrative_velocity,
+                strategy_type, strategy_fitness, predicted_next_cycle)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(slug) DO UPDATE SET
                 title=excluded.title, source=excluded.source, original_url=excluded.original_url,
                 game_type=excluded.game_type, bias_type=excluded.bias_type,
@@ -507,7 +673,20 @@ def upsert_article(meta: dict) -> None:
                 visual_anchors=excluded.visual_anchors, enemy_coherence=excluded.enemy_coherence,
                 liquidity_score=excluded.liquidity_score, cheap_narrative=excluded.cheap_narrative,
                 expensive_narrative=excluded.expensive_narrative,
-                hitchhiker_summary=excluded.hitchhiker_summary
+                hitchhiker_summary=excluded.hitchhiker_summary,
+                cognitive_bias_score=excluded.cognitive_bias_score,
+                signal_type=excluded.signal_type, signal_credibility=excluded.signal_credibility,
+                signal_irreversibility=excluded.signal_irreversibility,
+                signal_verifiability=excluded.signal_verifiability,
+                signal_noise_ratio=excluded.signal_noise_ratio,
+                deception_probability=excluded.deception_probability,
+                game_family=excluded.game_family, move_type=excluded.move_type,
+                strategy_detected=excluded.strategy_detected, cooperation_level=excluded.cooperation_level,
+                game_phase=excluded.game_phase,
+                cascade_risk=excluded.cascade_risk, independent_sources=excluded.independent_sources,
+                reversal_risk=excluded.reversal_risk, narrative_velocity=excluded.narrative_velocity,
+                strategy_type=excluded.strategy_type, strategy_fitness=excluded.strategy_fitness,
+                predicted_next_cycle=excluded.predicted_next_cycle
         """, (
             slug, meta.get("title", ""), meta.get("source", ""), meta.get("original_url", ""),
             meta.get("game_type", ""), meta.get("bias_type", ""),
@@ -530,6 +709,17 @@ def upsert_article(meta: dict) -> None:
             meta.get("visual_anchors", 0.0), meta.get("enemy_coherence", 0.0),
             meta.get("liquidity_score", 0.0), meta.get("cheap_narrative"),
             meta.get("expensive_narrative"), meta.get("hitchhiker_summary", ""),
+            meta.get("cognitive_bias_score", 0.0),
+            meta.get("signal_type", ""), meta.get("signal_credibility", 0.0),
+            meta.get("signal_irreversibility", 0.0), meta.get("signal_verifiability", 0.0),
+            meta.get("signal_noise_ratio", 0.0), meta.get("deception_probability", 0.0),
+            meta.get("game_family", ""), meta.get("move_type", ""),
+            meta.get("strategy_detected", ""), meta.get("cooperation_level", 0.0),
+            meta.get("game_phase", ""),
+            meta.get("cascade_risk", 0.0), meta.get("independent_sources", 0),
+            meta.get("reversal_risk", 0.0), meta.get("narrative_velocity", 0.0),
+            meta.get("strategy_type", ""), meta.get("strategy_fitness", 0.0),
+            meta.get("predicted_next_cycle", ""),
         ))
 
         # Clear + re-insert actors
@@ -564,6 +754,44 @@ def upsert_article(meta: dict) -> None:
                 VALUES (?, ?, ?, ?, ?)""",
                 (slug, myth.get("archetype", ""), myth.get("signals", ""),
                  myth.get("cultural_function", ""), myth.get("power_function", "")))
+
+        # Upgrade 1: Bayesian beliefs
+        for bc in meta.get("bayesian_claims", []):
+            if isinstance(bc, dict) and bc.get("claim"):
+                claim_hash = hashlib.sha1(bc["claim"].encode()).hexdigest()[:12]
+                db.execute("""INSERT INTO belief_states
+                    (claim_hash, claim_text, prior, posterior, evidence_strength, evidence_type, source_slug, actor, cycle)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (claim_hash, bc["claim"], bc.get("prior", 0.5), bc.get("posterior", 0.5),
+                     bc.get("evidence_strength", "moderate"), bc.get("evidence_type", "expert opinion"),
+                     slug, "", meta.get("created", "")))
+
+        # Upgrade 2: Cognitive biases
+        db.execute("DELETE FROM article_biases WHERE article_slug = ?", (slug,))
+        for bias in meta.get("cognitive_biases", []):
+            if bias:
+                db.execute("""INSERT INTO article_biases
+                    (article_slug, bias_type, detected, detail, severity)
+                    VALUES (?, ?, 1, ?, ?)""",
+                    (slug, bias, meta.get("bias_detail", ""), meta.get("cognitive_bias_score", 0.0)))
+
+        # Upgrade 5: Actor positions
+        db.execute("DELETE FROM actor_positions WHERE article_slug = ?", (slug,))
+        for au in meta.get("actor_utility", []):
+            if isinstance(au, dict) and au.get("actor"):
+                actor_name = au["actor"]
+                db.execute("""INSERT INTO actor_positions
+                    (actor, article_slug, stated_position, detected_position, position_type, confidence)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
+                    (actor_name, slug, au.get("stated_position", ""),
+                     au.get("detected_position", ""), au.get("position_type", ""),
+                     0.7 if au.get("position_type") == "genuine" else 0.3))
+                # Upsert actor profile
+                db.execute("""INSERT INTO actor_profiles (actor, credibility_score, updated)
+                    VALUES (?, ?, ?) ON CONFLICT(actor) DO UPDATE SET
+                    credibility_score = (credibility_score + excluded.credibility_score) / 2,
+                    updated = excluded.updated""",
+                    (actor_name, 0.5, meta.get("updated", "")))
 
         db.commit()
     finally:
@@ -1291,5 +1519,221 @@ def get_prediction_accuracy_stats() -> dict:
             "avg_score": avg_score,
             "recent": recent,
         }
+    finally:
+        db.close()
+
+
+# --- Upgrade 1: Bayesian Belief Tracker ---
+
+def get_belief_updates(limit=50) -> list[dict]:
+    """Get belief states ordered by belief delta (most updated first)."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT claim_hash, claim_text, prior, posterior,
+                   ABS(posterior - prior) AS belief_delta,
+                   evidence_strength, evidence_type, source_slug, created
+            FROM belief_states
+            ORDER BY ABS(posterior - prior) DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+def get_belief_evolution(claim_hash: str) -> list[dict]:
+    """Get belief evolution timeline for a specific claim."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT prior, posterior, evidence_strength, evidence_type, source_slug, created
+            FROM belief_states WHERE claim_hash = ?
+            ORDER BY created ASC
+        """, (claim_hash,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+# --- Upgrade 2: Bias Engine ---
+
+def get_bias_heatmap() -> list[dict]:
+    """Get bias frequency by source."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT a.source, ab.bias_type, COUNT(*) as cnt, AVG(ab.severity) as avg_severity
+            FROM article_biases ab
+            JOIN articles a ON ab.article_slug = a.slug
+            GROUP BY a.source, ab.bias_type
+            ORDER BY a.source, cnt DESC
+        """).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+def get_biased_articles(limit=30) -> list[dict]:
+    """Get articles with highest cognitive bias scores."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT * FROM articles
+            WHERE cognitive_bias_score > 0
+            ORDER BY cognitive_bias_score DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+# --- Upgrade 3: Signal Lab ---
+
+def get_signals_by_type(signal_type=None, limit=30) -> list[dict]:
+    """Get articles with signal classification."""
+    db = _get_articles_db()
+    try:
+        if signal_type:
+            rows = db.execute("""
+                SELECT slug, title, source, signal_type, signal_credibility,
+                       signal_irreversibility, signal_verifiability, signal_noise_ratio,
+                       deception_probability, game_type, created
+                FROM articles WHERE signal_type = ?
+                ORDER BY signal_credibility DESC LIMIT ?
+            """, (signal_type, limit)).fetchall()
+        else:
+            rows = db.execute("""
+                SELECT slug, title, source, signal_type, signal_credibility,
+                       signal_irreversibility, signal_verifiability, signal_noise_ratio,
+                       deception_probability, game_type, created
+                FROM articles WHERE signal_type IS NOT NULL AND signal_type != ''
+                ORDER BY signal_credibility DESC LIMIT ?
+            """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+# --- Upgrade 4: Game Ledger ---
+
+def get_active_games(limit=20) -> list[dict]:
+    """Get active game instances with move history."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT gi.*,
+                   (SELECT COUNT(*) FROM game_moves WHERE game_id = gi.id) as total_moves
+            FROM game_instances gi
+            WHERE gi.equilibrium_state = 'active'
+            ORDER BY gi.updated DESC LIMIT ?
+        """, (limit,)).fetchall()
+        results = []
+        for r in rows:
+            d = dict(r)
+            d["moves"] = [dict(m) for m in db.execute(
+                "SELECT * FROM game_moves WHERE game_id = ? ORDER BY move_number ASC",
+                (r["id"],)
+            ).fetchall()]
+            results.append(d)
+        return results
+    finally:
+        db.close()
+
+
+# --- Upgrade 5: Actor Utility ---
+
+def get_actor_profile(actor: str) -> dict:
+    """Get actor profile with utility model and positions."""
+    db = _get_articles_db()
+    try:
+        profile = db.execute("SELECT * FROM actor_profiles WHERE actor = ?", (actor,)).fetchone()
+        positions = db.execute("""
+            SELECT ap.*, a.title, a.game_type, a.created
+            FROM actor_positions ap
+            JOIN articles a ON ap.article_slug = a.slug
+            WHERE ap.actor = ?
+            ORDER BY ap.created DESC LIMIT 20
+        """, (actor,)).fetchall()
+        result = dict(profile) if profile else {"actor": actor}
+        result["positions"] = [dict(p) for p in positions]
+        return result
+    finally:
+        db.close()
+
+
+# --- Upgrade 6: Cascade Scanner ---
+
+def get_cascade_articles(limit=20) -> list[dict]:
+    """Get articles with cascade risk, highest first."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT slug, title, source, cascade_risk, independent_sources,
+                   reversal_risk, narrative_velocity, game_type, created
+            FROM articles WHERE cascade_risk > 0
+            ORDER BY cascade_risk DESC LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+# --- Upgrade 7: Fitness Landscape ---
+
+def get_narrative_fitness(limit=20) -> list[dict]:
+    """Get narrative strategies with fitness scores."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT ns.*, COUNT(nsa.id) as article_count
+            FROM narrative_strategies ns
+            LEFT JOIN narrative_strategy_articles nsa ON ns.id = nsa.strategy_id
+            GROUP BY ns.id
+            ORDER BY ns.fitness_score DESC LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+def get_strategy_distribution() -> list[dict]:
+    """Get strategy type distribution (population shares)."""
+    db = _get_articles_db()
+    try:
+        rows = db.execute("""
+            SELECT strategy_type, COUNT(*) as cnt,
+                   AVG(strategy_fitness) as avg_fitness
+            FROM articles
+            WHERE strategy_type IS NOT NULL AND strategy_type != ''
+            GROUP BY strategy_type
+            ORDER BY cnt DESC
+        """).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
+
+
+# --- Upgrade 8: Game Graph ---
+
+def get_game_graph() -> dict:
+    """Get game dependency graph data for D3 visualization."""
+    db = _get_articles_db()
+    try:
+        nodes = [dict(r) for r in db.execute("""
+            SELECT id, game_hash, game_type, actors, cooperation_level, equilibrium_state
+            FROM game_instances
+            WHERE equilibrium_state = 'active'
+        """).fetchall()]
+        edges = [dict(r) for r in db.execute("""
+            SELECT gd.id, gd.source_game_id, gd.target_game_id,
+                   gd.dependency_type, gd.strength, gd.mechanism
+            FROM game_dependencies gd
+            JOIN game_instances gi1 ON gd.source_game_id = gi1.id
+            JOIN game_instances gi2 ON gd.target_game_id = gi2.id
+            WHERE gi1.equilibrium_state = 'active' AND gi2.equilibrium_state = 'active'
+        """).fetchall()]
+        return {"nodes": nodes, "edges": edges}
     finally:
         db.close()

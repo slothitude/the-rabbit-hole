@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Biases — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .biases-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .section-title { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 0.8rem; text-transform: uppercase; }
+    .heatmap-wrap { overflow-x: auto; margin-bottom: 2rem; }
+    .heatmap { border-collapse: collapse; font-size: 0.7rem; width: 100%; }
+    .heatmap th, .heatmap td {
+        border: 1px solid var(--border); padding: 0.4rem 0.6rem; text-align: center;
+    }
+    .heatmap th { background: var(--surface); color: var(--text-dim); font-weight: normal; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .heatmap th:first-child { text-align: left; min-width: 120px; }
+    .heatmap td { color: var(--text); }
+    .heatmap td .cell-count { font-weight: bold; }
+    .heatmap td .cell-sev { font-size: 0.6rem; color: var(--text-dim); }
+    .cell-hot { background: rgba(248,81,73,0.12); }
+    .cell-warm { background: rgba(210,153,34,0.1); }
+    .cell-cool { background: transparent; }
+    .article-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; transition: border-color 0.2s;
+    }
+    .article-card:hover { border-color: var(--accent-dim); }
+    .article-card h3 { font-size: 0.85rem; margin-bottom: 0.3rem; }
+    .article-card h3 a { color: var(--accent); }
+    .article-meta { font-size: 0.7rem; color: var(--text-dim); display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .bias-score-badge {
+        padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.6rem; font-weight: bold;
+        background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid #f85149;
+    }
+</style>
+
+<div class="biases-header">
+    <h1>BIAS ENGINE</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ heatmap|length }}</strong> sources analyzed</div>
+    <div class="stat-item"><strong>{{ articles|length }}</strong> flagged articles</div>
+</div>
+
+<!-- Heatmap -->
+<div class="section-title">Source × Bias Type Heatmap</div>
+{% if heatmap %}
+<div class="heatmap-wrap">
+<table class="heatmap">
+    <thead>
+        <tr>
+            <th>Source</th>
+            {% for bt in bias_types %}
+            <th>{{ bt }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in heatmap %}
+        <tr>
+            <td style="text-align:left; font-weight:bold; color:var(--accent);">{{ row.source }}</td>
+            {% for bt in bias_types %}
+            {% set cell = row.cells.get(bt) %}
+            <td class="{{ 'cell-hot' if cell and cell.avg_severity >= 7 else ('cell-warm' if cell and cell.avg_severity >= 4 else 'cell-cool') }}">
+                {% if cell %}
+                    <span class="cell-count">{{ cell.count }}</span>
+                    <br><span class="cell-sev">avg {{ "%.1f"|format(cell.avg_severity) }}</span>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<div style="text-align:center; padding:2rem; color:var(--text-dim); margin-bottom:2rem;">
+    <p>No bias heatmap data yet.</p>
+</div>
+{% endif %}
+
+<!-- Articles -->
+<div class="section-title">Highest Bias Articles</div>
+{% if articles %}
+{% for a in articles %}
+<div class="article-card">
+    <h3><a href="{{ prefix }}/entry/{{ a.slug }}">{{ a.title }}</a></h3>
+    <div class="article-meta">
+        <span class="bias-score-badge">bias {{ "%.1f"|format(a.cognitive_bias_score) }}</span>
+        {% for bt in a.bias_types %}
+        <span class="tag">{{ bt }}</span>
+        {% endfor %}
+        <span>{{ a.source }}</span>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:2rem; color:var(--text-dim);">
+    <p>No bias-flagged articles yet. Run the reporter to populate bias analysis.</p>
+</div>
+{% endif %}
+{% endblock %}

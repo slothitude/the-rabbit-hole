@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Games — The Guide to the Rabbit Hole{% endblock %}
+{% block content %}
+<style>
+    .games-header h1 { font-size: 1rem; color: var(--accent); letter-spacing: 1px; }
+    .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.7rem; color: var(--text-dim); }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; }
+    .stat-item strong { color: var(--accent); }
+    .game-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+        margin-bottom: 1rem; overflow: hidden; transition: border-color 0.2s;
+    }
+    .game-card:hover { border-color: var(--accent-dim); }
+    .game-top { padding: 0.8rem 1.2rem; border-bottom: 1px solid var(--border); }
+    .game-top h3 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .game-top h3 a { color: var(--accent); }
+    .game-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+    .game-type-badge {
+        padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.6rem; font-weight: bold;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        background: rgba(88,166,255,0.1); color: #58a6ff; border: 1px solid #58a6ff;
+    }
+    .eq-badge {
+        padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.6rem; font-weight: bold;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .eq-nash { background: rgba(200,255,0,0.1); color: var(--accent); border: 1px solid var(--accent); }
+    .eq-pareto { background: rgba(63,185,80,0.1); color: #3fb950; border: 1px solid #3fb950; }
+    .eq-none { background: rgba(139,148,158,0.1); color: #8b949e; border: 1px solid #8b949e; }
+    .coop-meter { margin-top: 0.4rem; }
+    .coop-label { font-size: 0.6rem; color: var(--text-dim); display: flex; justify-content: space-between; }
+    .coop-bar {
+        background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+        height: 6px; width: 100%; margin-top: 0.2rem;
+    }
+    .coop-fill { height: 100%; border-radius: 3px; }
+    .fill-coop { background: #3fb950; }
+    .fill-defect { background: #f85149; }
+    .fill-mixed { background: #d29922; }
+    .move-timeline { padding: 0.6rem 1.2rem; }
+    .move-timeline-title { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .move-list { list-style: none; counter-reset: move; padding: 0; }
+    .move-list li {
+        counter-increment: move; font-size: 0.7rem; color: var(--text-dim);
+        padding: 0.2rem 0; padding-left: 1.8rem; position: relative;
+        border-left: 1px solid var(--border); margin-left: 0.6rem;
+    }
+    .move-list li::before {
+        content: counter(move); position: absolute; left: -0.5rem; top: 0.15rem;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 50%;
+        width: 1rem; height: 1rem; font-size: 0.55rem; text-align: center;
+        line-height: 1rem; color: var(--text-dim);
+    }
+    .move-type-badge {
+        display: inline-block; padding: 0.05rem 0.3rem; border-radius: 2px;
+        font-size: 0.55rem; font-weight: bold; text-transform: uppercase;
+        background: rgba(88,166,255,0.1); color: #58a6ff; margin-left: 0.3rem;
+    }
+</style>
+
+<div class="games-header">
+    <h1>GAME LEDGER</h1>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item"><strong>{{ games|length }}</strong> game instances</div>
+</div>
+
+{% if games %}
+{% for g in games %}
+<div class="game-card">
+    <div class="game-top">
+        <h3>
+            <a href="{{ prefix }}/entry/{{ g.slug }}">{{ g.title }}</a>
+            <span class="game-type-badge">{{ g.game_type }}</span>
+        </h3>
+        <div class="game-meta">
+            <span>Move {{ g.move_number }}</span>
+            <span>Strategy: {{ g.strategy_observed }}</span>
+            <span>Actors: {{ g.actors|join(', ') }}</span>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.3rem;">
+            <span class="eq-badge eq-{{ g.equilibrium_state }}">{{ g.equilibrium_state }}</span>
+        </div>
+        <div class="coop-meter">
+            <div class="coop-label">
+                <span>Cooperation</span>
+                <span>{{ g.cooperation_level }}/10</span>
+            </div>
+            <div class="coop-bar">
+                <div class="coop-fill {{ 'fill-coop' if g.cooperation_level >= 7 else ('fill-mixed' if g.cooperation_level >= 4 else 'fill-defect') }}"
+                     style="width:{{ g.cooperation_level * 10 }}%"></div>
+            </div>
+        </div>
+    </div>
+    {% if g.moves %}
+    <div class="move-timeline">
+        <div class="move-timeline-title">Move Timeline</div>
+        <ol class="move-list">
+            {% for m in g.moves %}
+            <li>
+                {{ m.description }}
+                <span class="move-type-badge">{{ m.move_type }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center; padding:3rem; color:var(--text-dim);">
+    <p>No game instances recorded yet. Games are detected during article analysis.</p>
+</div>
+{% endif %}
+{% endblock %}
