@@ -1,0 +1,16 @@
+2026-06-03 18:04:53,198 INFO Starting v3 report run
+2026-06-03 18:04:55,248 WARNING SearchV2 GET /api/articles returned 401
+2026-06-03 18:05:57,001 INFO Starting v3 report run
+2026-06-03 18:05:59,054 WARNING SearchV2 GET /api/articles returned 401
+2026-06-03 18:08:38,212 INFO Starting v3 report run
+2026-06-03 18:08:40,269 WARNING SearchV2 GET /api/articles returned 401
+2026-06-03 18:09:04,233 INFO Starting v3 report run
+2026-06-03 18:09:06,305 WARNING SearchV2 GET /api/articles returned 401
+2026-06-03 18:10:09,903 INFO Starting v3 report run
+2026-06-03 18:11:18,280 ERROR Git push failed: fatal: Unable to persist credentials with the 'wincredman' credential store.
+See https://aka.ms/gcm/credstores for more information.
+bash: line 1: /dev/tty: No such device or address
+error: failed to 
+2026-06-03 18:11:18,282 INFO Report v3 complete: PUSH FAILED (3 articles, 0 KG hits)
+2026-06-03 19:36:14,353 INFO Starting v3 report run
+2026-06-03 19:37:22,903 INFO Report v3 complete: OK (3 articles, 0 KG hits)
